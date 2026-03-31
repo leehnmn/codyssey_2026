@@ -47,4 +47,11 @@ docker ps //실행중 없음
 docker starts // 현재위치에서 실행
 컨테이너 종료시: attach 기존 실헬 프로세스에는 불가하다. 기존 bash 연결 // 
 exec 컨테이너 안에서 "새프로세스를 시작한다. 새 bash 연결
+## 기존 Dockerfile 기반 커스텀 이미지 제작
+이미지 빌드 제작
+docker build -t my-web . // . 현재경로 위치 , -t 이름 태그
+컨테이너 실행
+docker run -d -p 8080:80 my-web // -d 백그라운드 -p 포트연결
+nginx 기반 커스텀 웹서버 이미지 제작
+
 
