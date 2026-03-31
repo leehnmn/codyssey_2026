@@ -33,8 +33,18 @@ touch test.txt // touch = 파일 생성
 cp test.txt new.txt // cp = 카피, cp 원본파일 카피파일이름
 mv new.txt copy.txt // mv = 이동,이름바꾸기 
 rm copy.txt // rm = 삭제
-cat test.txt // 내용출력ddd
-    
-
-
+cat test.txt // 내용출력
+## 5. docker 기본실습
+Bash 
+docker --version
+docker info
+이미지 생성후 진입
+Bash
+docker run hello-world // 이미지 생성
+docker run -it ubunto bash // 컨테이너 생성 실행 // bash로 진입
+exit
+docker ps //실행중 없음
+docker starts // 현재위치에서 실행
+컨테이너 종료시: attach 기존 실헬 프로세스에는 불가하다. 기존 bash 연결 // 
+exec 컨테이너 안에서 "새프로세스를 시작한다. 새 bash 연결
 
