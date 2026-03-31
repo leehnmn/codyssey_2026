@@ -24,34 +24,54 @@ git --version
 - Docker 볼륨 실습
 - Git/GitHub 연동
 ## 4. 터미널 조작 로그
-bash
-pwd //현위치
-ls -al //ls = 목록확인 -al = all
-mkdir docker-project // mkdir = 폴더생성 , 파일이름
-cd docker-project // cd = 폴더로 이동
-touch test.txt // touch = 파일 생성
-cp test.txt new.txt // cp = 카피, cp 원본파일 카피파일이름
-mv new.txt copy.txt // mv = 이동,이름바꾸기 
-rm copy.txt // rm = 삭제
-cat test.txt // 내용출력
-## 5. docker 기본실습
-Bash 
-docker --version
-docker info
-이미지 생성후 진입
-Bash
-docker run hello-world // 이미지 생성
-docker run -it ubunto bash // 컨테이너 생성 실행 // bash로 진입
-exit
-docker ps //실행중 없음
-docker starts // 현재위치에서 실행
-컨테이너 종료시: attach 기존 실헬 프로세스에는 불가하다. 기존 bash 연결 // 
-exec 컨테이너 안에서 "새프로세스를 시작한다. 새 bash 연결
-## 기존 Dockerfile 기반 커스텀 이미지 제작
-이미지 빌드 제작
-docker build -t my-web . // . 현재경로 위치 , -t 이름 태그
-컨테이너 실행
-docker run -d -p 8080:80 my-web // -d 백그라운드 -p 포트연결
-nginx 기반 커스텀 웹서버 이미지 제작
-
-
+bash /n
+pwd //현위치 /n
+ls -al //ls = 목록확인 -al = all /n
+mkdir docker-project // mkdir = 폴더생성 , 파일이름 /n
+cd docker-project // cd = 폴더로 이동 /n
+touch test.txt // touch = 파일 생성 /n
+cp test.txt new.txt // cp = 카피, cp 원본파일 카피파일이름 /n
+mv new.txt copy.txt // mv = 이동,이름바꾸기 /n
+rm copy.txt // rm = 삭제 /n
+cat test.txt // 내용출력 /n
+## 5. docker 기본실습 
+Bash  /n
+docker --version /n
+docker info /n
+이미지 생성후 진입 /n
+Bash /n
+docker run hello-world // 이미지 생성 /n
+docker run -it ubuntu bash // 컨테이너 생성 실행 // bash로 진입 /n
+exit /n
+docker ps //실행중 없음 /n
+docker starts // 현재위치에서 실행 /n
+컨테이너 종료시: attach 기존 실헬 프로세스에는 불가하다. 기존 bash 연결 //  /n
+exec 컨테이너 안에서 "새프로세스를 시작한다. 새 bash 연결 /n
+## 기존 Dockerfile 기반 커스텀 이미지 제작 
+이미지 빌드 제작 /n
+docker build -t my-web . // . 현재경로 위치 , -t 이름 태그 /n
+컨테이너 실행 /n
+docker run -d -p 8080:80 my-web // -d 백그라운드 -p 포트연결 /n
+nginx 기반 커스텀 웹서버 이미지 제작 /n
+docker start (name cmd v) /n
+docker volume create my-volme 볼륨 생성 /n
+docker run -it -v my-volume:/data ubuntu bash 볼륨 시작 /n
+echo "hello volume" > /data/test.txt 볼륨 안에 파일 생성 /n
+컨테이너 삭제 후 볼륨 살아있는지 확인 /n
+exit /n
+docker stop (컨테이너 id) /n
+docker rm (컨테이너 id) /n
+docker run -it -v my-volume:/data ubuntu bash /n
+cat /data/test.txt /n
+## 이미지와 컨테이너 차이
+이미지 = 컨테이너 내부의 실행파일 /n
+컨테이너 이미지를 구성하는 전체적인 환경 /n
+## 포트 및 볼륨설정 재현가능
+동일 환경에서 누구나 동일 결과값을 얻을 수있도록 포트 매핑과 볼륨설정을 명령어 기반으로 재현하였다. /n
+bash ..8080 호스트 80 내부포트 /n
+## 컨테이너 내부 포트로 직접접속못하는 이유
+컨테이너는 호스틀와 분리되어 격리된 네트워크 환경에서만 실행 가능 /n
+보안 때문에 외부에서 자율적으로 접근한다면 공격과 무단 접근 가능성이 높아진다. /n
+## 절대경로 상대경로 차이 
+절대경로 루트 / 처음 부터 시작 /n
+상대경로 현재위치 기준으로 이동하는 경로 /n
