@@ -170,11 +170,11 @@ python main.py
 ## 7. 파일 구조
 
 project-2/
-├── main.py
-├── quiz.py
-├── quiz_game.py
-├── state.json
-── README.md
+├── main.py. 
+├── quiz.py. 
+├── quiz_game.py. 
+├── state.json. 
+── README.md. 
 ## 8. 데이터 파일 설명 (state.json)
 
 ### 역할
@@ -198,11 +198,11 @@ state.json
   "best_score": 3
 }
 깃 주요 명령어
-git init
-git add .
-git commit -m "message"
-git push
-git pull
-git clone
-git checkout -b branch
-git merge branch
+git init  
+git add .  
+git commit -m "message"  
+git push  
+git pull  
+git clone  
+git checkout -b branch  
+git merge branch  
