@@ -86,3 +86,24 @@ class QuizGame:
         print("4. 최고 점수 확인")
         print("5. 종료")
 
+    def play_quiz(self):
+        if not self.quizzes:
+            print("등록된 퀴즈가 없습니다.")
+            return
+
+        score = 0
+        for quiz in self.quizzes:
+            quiz.display()
+            answer = self.get_valid_number_input("정답 번호를 입력하세요 (1~4): ", 1, 4)
+            if quiz.is_correct(answer):
+                print("정답입니다!")
+                score += 1
+            else:
+                print(f"오답입니다. 정답은 {quiz.answer}번입니다.")
+
+        print(f"\n퀴즈 종료! 총 점수: {score}/{len(self.quizzes)}")
+        if self.best_score is None or score > self.best_score:
+            self.best_score = score
+            print("최고 점수가 갱신되었습니다!")
+            self.save_state()
+
