@@ -42,3 +42,14 @@ class QuizGame:
             self.quizzes = self.get_default_quizzes()
             self.best_score = None
             self.save_state()
+ 
+    def save_state(self):
+        data = {
+            "quizzes": [quiz.to_dict() for quiz in self.quizzes],
+            "best_score": self.best_score,
+        }
+        try:
+            with open(self.state_file, "w", encoding="utf-8") as file:
+                json.dump(data, file, ensure_ascii=False, indent=2)
+        except OSError:
+            print("파일 저장 중 오류가 발생했습니다.")
