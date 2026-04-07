@@ -26,11 +26,12 @@ git --version
 ## 4. 터미널 조작 로그
 bash 
 pwd //현위치 
-ls -al //ls = 목록확인 -al = all  
+ls -al //ls = 목록확인 -la = all  la 도 가능 a = all  //파일도 옵션이 들어가야
+
 mkdir docker-project // mkdir = 폴더생성 , 파일이름  
-cd docker-project // cd = 폴더로 이동  
+cd docker-project // cd = 폴더로 이동 
 touch test.txt // touch = 파일 생성  
-cp test.txt new.txt // cp = 카피, cp 원본파일 카피파일이름   
+cp test.txt new.txt // cp = 카피, cp 원본파일 카피파일이름   //파일도 옵션이 들어가야 -r 
 mv new.txt copy.txt // mv = 이동,이름바꾸기  
 rm copy.txt // rm = 삭제  
 cat test.txt // 내용출력  
@@ -44,7 +45,7 @@ docker run hello-world // 이미지 생성
 docker run -it ubuntu bash // 컨테이너 생성 실행 // bash로 진입  
 exit  
 docker ps //실행중 없음  
-docker starts // 현재위치에서 실행  
+docker start // 현재위치에서 실행  
 컨테이너 종료시: attach 기존 실헬 프로세스에는 불가하다. 기존 bash 연결 //  
 exec 컨테이너 안에서 "새프로세스를 시작한다. 새 bash 연결 
 ## 기존 Dockerfile 기반 커스텀 이미지 제작 
@@ -75,3 +76,8 @@ bash ..8080 호스트 80 내부포트
 ## 절대경로 상대경로 차이 
 절대경로 루트 / 처음 부터 시작  
 상대경로 현재위치 기준으로 이동하는 경로  
+## 권한 설정 변경 
+ls -al 
+권한 확인후 
+chmod 755 파일명
+ls -al 후 변경 확인
