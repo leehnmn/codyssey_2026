@@ -107,3 +107,27 @@ class QuizGame:
             print("최고 점수가 갱신되었습니다!")
             self.save_state()
 
+    def add_quiz(self):
+        question = self.get_text_input("문제를 입력하세요: ")
+        if question is None:
+            return
+
+        choices = []
+        for i in range(1, 5):
+            choice = self.get_text_input(f"{i}번 선택지를 입력하세요: ")
+            if choice is None:
+                return
+            choices.append(choice)
+
+        answer = self.get_valid_number_input("정답 번호를 입력하세요 (1~4): ", 1, 4)
+        self.quizzes.append(Quiz(question, choices, answer))
+        self.save_state()
+        print("새 퀴즈가 저장되었습니다.")
+
+    def list_quizzes(self):
+        if not self.quizzes:
+            print("등록된 퀴즈가 없습니다.")
+            return
+        print("\n===== 퀴즈 목록 =====")
+        for idx, quiz in enumerate(self.quizzes, start=1):
+            print(f"{idx}. {quiz.question}")
