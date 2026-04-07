@@ -78,3 +78,11 @@ class QuizGame:
                 print(f"{min_value}부터 {max_value} 사이의 숫자를 입력하세요.")
             except ValueError:
                 print("숫자를 입력해야 합니다. 다시 입력하세요.")
+    def show_menu(self):
+        print("\n===== 퀴즈 게임 =====")
+        print("1. 퀴즈 풀기")
+        print("2. 퀴즈 추가")
+        print("3. 퀴즈 목록 보기")
+        print("4. 최고 점수 확인")
+        print("5. 종료")
+
