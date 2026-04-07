@@ -11,7 +11,7 @@ class QuizGame:
         self.best_score = None
         self.load_state()
 
-def get_default_quizzes(self):
+    def get_default_quizzes(self):
         return [
             Quiz("Python에서 문자열 자료형은 무엇인가요?",
                  ["int", "str", "bool", "list"], 2),
@@ -24,3 +24,21 @@ def get_default_quizzes(self):
             Quiz("함수를 정의할 때 사용하는 키워드는 무엇인가요?",
                  ["func", "def", "method", "lambda"], 2),
         ]
+    def load_state(self):
+        try:
+            if not os.path.exists(self.state_file):
+                raise FileNotFoundError
+
+            with open(self.state_file, "r", encoding="utf-8") as file:
+                data = json.load(file)
+
+            self.quizzes = [Quiz.from_dict(item) for item in data.get("quizzes", [])]
+            self.best_score = data.get("best_score")
+            if not self.quizzes:
+                self.quizzes = self.get_default_quizzes()
+
+        except (FileNotFoundError, json.JSONDecodeError, OSError, KeyError, TypeError):
+            print("state.json 파일이 없거나 손상되어 기본 데이터로 복구합니다.")
+            self.quizzes = self.get_default_quizzes()
+            self.best_score = None
+            self.save_state()
