@@ -131,3 +131,4 @@ class QuizGame:
         print("\n===== 퀴즈 목록 =====")
         for idx, quiz in enumerate(self.quizzes, start=1):
             print(f"{idx}. {quiz.question}")
+
