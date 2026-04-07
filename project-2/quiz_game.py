@@ -53,3 +53,28 @@ class QuizGame:
                 json.dump(data, file, ensure_ascii=False, indent=2)
         except OSError:
             print("파일 저장 중 오류가 발생했습니다.")
+
+    def get_text_input(self, prompt):
+        try:
+            value = input(prompt).strip()
+            if not value:
+                print("빈 입력은 허용되지 않습니다.")
+                return None
+            return value
+        except (KeyboardInterrupt, EOFError):
+            print("\n입력이 중단되었습니다. 저장 후 안전하게 종료합니다.")
+            self.save_state()
+            raise SystemExit
+
+    def get_valid_number_input(self, prompt, min_value, max_value):
+        while True:
+            text = self.get_text_input(prompt)
+            if text is None:
+                continue
+            try:
+                number = int(text)
+                if min_value <= number <= max_value:
+                    return number
+                print(f"{min_value}부터 {max_value} 사이의 숫자를 입력하세요.")
+            except ValueError:
+                print("숫자를 입력해야 합니다. 다시 입력하세요.")
