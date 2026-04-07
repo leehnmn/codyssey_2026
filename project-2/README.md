@@ -186,7 +186,7 @@ project-2/
 ```bash
 state.json
 ```
-##구조예시
+### 구조예시
 {
   "quizzes": [
     {
@@ -197,7 +197,8 @@ state.json
   ],
   "best_score": 3
 }
-###깃 주요 명령어
+
+## 9. 깃 주요 명령어
 git init  
 git add .  
 git commit -m "message"  
