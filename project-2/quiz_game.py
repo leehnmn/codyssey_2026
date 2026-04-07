@@ -132,3 +132,24 @@ class QuizGame:
         for idx, quiz in enumerate(self.quizzes, start=1):
             print(f"{idx}. {quiz.question}")
 
+    def show_best_score(self):
+        print("아직 기록된 최고 점수가 없습니다."
+              if self.best_score is None
+              else f"현재 최고 점수는 {self.best_score}점입니다.")
+
+    def run(self):
+        while True:
+            self.show_menu()
+            choice = self.get_valid_number_input("메뉴를 선택하세요 (1~5): ", 1, 5)
+            if choice == 1:
+                self.play_quiz()
+            elif choice == 2:
+                self.add_quiz()
+            elif choice == 3:
+                self.list_quizzes()
+            elif choice == 4:
+                self.show_best_score()
+            else:
+                self.save_state()
+                print("프로그램을 종료합니다.")
+                break
