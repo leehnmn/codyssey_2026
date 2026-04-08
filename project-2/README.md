@@ -207,3 +207,8 @@ git pull
 git clone  
 git checkout -b branch  
 git merge branch  
+
+## 10. 깃클론
+dlgusals01205864@c5r9s7 ~ % git clone https://github.com/leehnmn/codyssey_2026.git
+fatal: destination path 'codyssey_2026' already exists and is not an empty directory.
+이미 클론을 진행한 상태이기 때문에 이미 디렉토리가 있다고 나옴

@@ -7,5 +7,6 @@ def main():
 if __name__ == "__main__":
     try:
         main()
+        print("브랜치 병합 테스트")
     except (KeyboardInterrupt, EOFError):
         print("\n프로그램이 안전하게 종료되었습니다.")
