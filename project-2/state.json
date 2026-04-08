@@ -1,0 +1,55 @@
+{
+  "quizzes": [
+    {
+      "question": "Python에서 문자열 자료형은 무엇인가요?",
+      "choices": [
+        "int",
+        "str",
+        "bool",
+        "list"
+      ],
+      "answer": 2
+    },
+    {
+      "question": "리스트를 만들 때 사용하는 기호는 무엇인가요?",
+      "choices": [
+        "()",
+        "{}",
+        "[]",
+        "<>"
+      ],
+      "answer": 3
+    },
+    {
+      "question": "조건문에 사용하는 키워드는 무엇인가요?",
+      "choices": [
+        "for",
+        "while",
+        "if",
+        "def"
+      ],
+      "answer": 3
+    },
+    {
+      "question": "반복문 중 횟수를 순회할 때 자주 사용하는 것은 무엇인가요?",
+      "choices": [
+        "for",
+        "class",
+        "return",
+        "import"
+      ],
+      "answer": 1
+    },
+    {
+      "question": "함수를 정의할 때 사용하는 키워드는 무엇인가요?",
+      "choices": [
+        "func",
+        "def",
+        "method",
+        "lambda"
+      ],
+      "answer": 2
+    }
+  ],
+  "best_score": null
+}

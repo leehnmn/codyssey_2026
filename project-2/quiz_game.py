@@ -11,7 +11,7 @@ class QuizGame:
         self.best_score = None
         self.load_state()
 
-    def get_default_quizzes(self):
+    def get_default_quizzes(self): # 기본문제 
         return [
             Quiz("Python에서 문자열 자료형은 무엇인가요?",
                  ["int", "str", "bool", "list"], 2),
@@ -24,7 +24,7 @@ class QuizGame:
             Quiz("함수를 정의할 때 사용하는 키워드는 무엇인가요?",
                  ["func", "def", "method", "lambda"], 2),
         ]
-    def load_state(self):
+    def load_state(self): # json file 불러오기 읽기
         try:
             if not os.path.exists(self.state_file):
                 raise FileNotFoundError
@@ -43,7 +43,7 @@ class QuizGame:
             self.best_score = None
             self.save_state()
  
-    def save_state(self):
+    def save_state(self): # json file 저장 쓰기 
         data = {
             "quizzes": [quiz.to_dict() for quiz in self.quizzes],
             "best_score": self.best_score,
@@ -54,19 +54,19 @@ class QuizGame:
         except OSError:
             print("파일 저장 중 오류가 발생했습니다.")
 
-    def get_text_input(self, prompt):
+    def get_text_input(self, prompt): # 입력 에러 
         try:
             value = input(prompt).strip()
             if not value:
                 print("빈 입력은 허용되지 않습니다.")
                 return None
             return value
-        except (KeyboardInterrupt, EOFError):
+        except (KeyboardInterrupt, EOFError): # 비정상 입력 처리 
             print("\n입력이 중단되었습니다. 저장 후 안전하게 종료합니다.")
             self.save_state()
             raise SystemExit
 
-    def get_valid_number_input(self, prompt, min_value, max_value):
+    def get_valid_number_input(self, prompt, min_value, max_value): #숫자 입력 
         while True:
             text = self.get_text_input(prompt)
             if text is None:
@@ -78,7 +78,7 @@ class QuizGame:
                 print(f"{min_value}부터 {max_value} 사이의 숫자를 입력하세요.")
             except ValueError:
                 print("숫자를 입력해야 합니다. 다시 입력하세요.")
-    def show_menu(self):
+    def show_menu(self): # 메뉴
         print("\n===== 퀴즈 게임 =====")
         print("1. 퀴즈 풀기")
         print("2. 퀴즈 추가")
@@ -86,7 +86,7 @@ class QuizGame:
         print("4. 최고 점수 확인")
         print("5. 종료")
 
-    def play_quiz(self):
+    def play_quiz(self): #퀴즈 진행
         if not self.quizzes:
             print("등록된 퀴즈가 없습니다.")
             return
@@ -107,7 +107,7 @@ class QuizGame:
             print("최고 점수가 갱신되었습니다!")
             self.save_state()
 
-    def add_quiz(self):
+    def add_quiz(self): # 퀴즈 추가
         question = self.get_text_input("문제를 입력하세요: ")
         if question is None:
             return
@@ -124,7 +124,7 @@ class QuizGame:
         self.save_state()
         print("새 퀴즈가 저장되었습니다.")
 
-    def list_quizzes(self):
+    def list_quizzes(self): #퀴즈 목록 출력
         if not self.quizzes:
             print("등록된 퀴즈가 없습니다.")
             return
@@ -132,12 +132,12 @@ class QuizGame:
         for idx, quiz in enumerate(self.quizzes, start=1):
             print(f"{idx}. {quiz.question}")
 
-    def show_best_score(self):
+    def show_best_score(self): #최고 점수 출력
         print("아직 기록된 최고 점수가 없습니다."
               if self.best_score is None
               else f"현재 최고 점수는 {self.best_score}점입니다.")
 
-    def run(self):
+    def run(self): #실행
         while True:
             self.show_menu()
             choice = self.get_valid_number_input("메뉴를 선택하세요 (1~5): ", 1, 5)
