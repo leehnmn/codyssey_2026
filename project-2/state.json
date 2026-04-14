@@ -69,7 +69,17 @@
         "fd"
       ],
       "answer": 2
+    },
+    {
+      "question": "고양이의 이름은?",
+      "choices": [
+        "고양이",
+        "야옹",
+        "뮤",
+        "미유"
+      ],
+      "answer": 1
     }
   ],
-  "best_score": 3
+  "best_score": 6
 }
