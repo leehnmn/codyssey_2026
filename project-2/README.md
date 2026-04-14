@@ -216,7 +216,15 @@ git merge branch
 dlgusals01205864@c5r9s7 ~ % git clone https://github.com/leehnmn/codyssey_2026.git
 fatal: destination path 'codyssey_2026' already exists and is not an empty directory.
 이미 클론을 진행한 상태이기 때문에 이미 디렉토리가 있다고 나옴
-
+## 11. git pull 
+# 현재 브랜치와 연결된 원격 브랜치의 변경사항을 가져옴.
+git pull
+bash: Already up to date.
+# 'origin'이라는 원격 저장소의 'main' 브랜치 내용을 가져올 때
+git pull origin main
+bash: From https://github.com/leehnmn/codyssey_2026
+ * branch            main       -> FETCH_HEAD
+Already up to date.
 ## try/except
 파일은 외부 요소라 실패할 가능성이있고 프로그램안정성을 확보하기 위해.
  
@@ -236,7 +244,7 @@ perf: 성능 개선에 대한 커밋
 클래스는 데이터,데이터처리기능을 묶어 관리 가능 함수는 특정기능만 수행 즉 데이터 관계 명화ㄱ, 코드 구조 확장성 증진
 
 ## json 파일 저장 이유 
-데이터를 파일에 저장하ㅗ 다음 실행에 불러오기 가능  프로그램 종료이후 유지 // 가독성이 좋음 == 
+데이터를 파일에 저장하고 다음 실행에 불러오기 가능  프로그램 종료이후 유지 // 가독성이 좋음 == 
 ## jsonl 
 ### 특징
 파일 기반저장이 가능 가독성이 좋음 구조가 있는 데이터 형식 = "유지보수가 굉장히 편함"
