@@ -1,0 +1,106 @@
+# 시스템 트러블슈팅 미션 종합 브리핑 및 심층 가이드
+
+본 문서는 진행된 모든 태스크의 세부 실행 명령어, 코드, 사유를 브리핑하고 어떠한 질문에도 방어할 수 있도록 심층적인 추가 지식을 제공하기 위해 작성되었습니다.
+
+---
+
+## 1. Orbstack 및 운영 환경 검증 보고
+
+**Q. 현재 사용자의 Orbstack에서 실행한 것이 맞는가? 그리고 어떻게 확인 가능한가?**
+* **결론**: 네, 맞습니다.
+* **확인 방법 및 증거**: 
+  1. 호스트 Mac 환경(Apple Silicon, ARM64)에서 제공된 바이너리(`agent-leak-app-x86`)를 직접 실행했을 때 `cannot execute binary file` 에러가 발생했습니다. 이는 해당 파일이 Linux 전용 ELF 바이너리이기 때문입니다.
+  2. 이를 구동하기 위해 Docker를 사용했으며, 백그라운드 태스크 로그(`#0 building with "orbstack" instance using docker driver`)를 통해 사용자 환경의 Docker Daemon이 **Orbstack**을 통해 구동되고 있음이 명확히 확인되었습니다.
+  3. `docker run --platform linux/amd64 ubuntu:22.04`를 통해 Orbstack의 Rosetta 2 x86 에뮬레이션 기능을 활용해 `amd64` 아키텍처 컨테이너를 가동하여 바이너리 호환성 문제를 해결했습니다.
+
+---
+
+## 2. 세부 진행 Task, 실행 명령어 및 소스 코드 총망라
+
+### Task 1: 컨테이너 환경 구축 및 보안 회피 세팅
+* **사유**: `agent-leak-app`은 내부적으로 `root` 권한 실행을 원천 차단(Forbidden)하는 로직(`[1/6] Checking User Account [FAIL]`)이 있습니다. Docker의 기본 유저는 `root`이므로 이를 회피하기 위해 전용 유저(`agentuser`)를 생성하고 권한을 부여해야 했습니다.
+* **사용된 Dockerfile (설정 내용)**:
+```dockerfile
+FROM ubuntu:22.04
+RUN apt-get update && apt-get install -y procps
+# root 실행 방어 우회를 위한 신규 유저 생성
+RUN useradd -m agentuser
+WORKDIR /app
+COPY agent-leak-app-x86 /app/
+# 요구사항에 명시된 필수 환경변수 디렉터리 및 키 파일 세팅
+ENV AGENT_HOME=/app/agent_home
+RUN mkdir -p $AGENT_HOME/upload_files $AGENT_HOME/api_keys $AGENT_HOME/logs
+RUN echo "agent_api_key_test" > $AGENT_HOME/api_keys/secret.key
+# 권한 양도 후 해당 유저로 실행 셸 변경
+RUN chown -R agentuser:agentuser /app
+USER agentuser
+CMD ["/bin/bash"]
+```
+* **실행 명령어**: 
+  - `docker build --no-cache --platform linux/amd64 -t agent-leak-test-amd64 .` (캐시 없이 명시적 x86 아키텍처로 빌드)
+  - `docker run --platform linux/amd64 -d --name agent-test-container agent-leak-test-amd64 sleep 3600` (백그라운드 컨테이너 유지)
+
+### Task 2: OS 관제 툴 (monitor.sh) 제작
+* **사유**: 미션 요구사항에서 OS 수준의 증거자료를 요구했으나 제공된 스크립트가 없어, Linux의 `ps` 명령어를 활용하여 PID를 1초마다 추적해 CPU와 MEM 사용률을 로깅하는 스크립트를 직접 작성했습니다.
+* **사용된 코드 (`monitor.sh`)**:
+```bash
+#!/bin/bash
+TARGET_PROC="agent-leak-app-x86"
+# pidof를 통해 대상 프로세스의 PID를 추출
+PID=$(pidof agent-leak-app-x86 | awk '{print $1}')
+while kill -0 $PID 2>/dev/null; do
+    # -o %cpu,%mem 포맷을 활용하여 헤더 제외(tail -n +2)하고 수치만 추출
+    STATS=$(ps -p $PID -o %cpu,%mem | tail -n +2)
+    if [ -n "$STATS" ]; then
+        CPU=$(echo "$STATS" | awk '{print $1}')
+        MEM=$(echo "$STATS" | awk '{print $2}')
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] PROCESS:agent-leak-app-x86 PID:$PID CPU:$CPU% MEM:$MEM%" >> /app/monitor.log
+    fi
+    sleep 1
+done
+```
+
+### Task 3~5: 3대 장애 시나리오별 실행 및 데이터 수집
+각 시나리오는 환경변수를 다르게 세팅한 실행 셸 스크립트(`test_oom.sh`, `test_cpu3.sh`, `test_deadlock.sh`)를 만들어 컨테이너 내부로 복사(`docker cp`) 후 실행(`docker exec`)하는 방식으로 진행했습니다.
+
+**[예시: CPU Spike 테스트 스크립트 및 명령어]**
+```bash
+# test_cpu.sh 내부 코드
+export MEMORY_LIMIT=500
+export CPU_MAX_OCCUPY=100
+export MULTI_THREAD_ENABLE=false
+/app/agent-leak-app-x86 > /app/app_cpu3.log 2>&1 &
+```
+* **명령어**: `docker exec -u agentuser agent-test-container /bin/bash -c "/app/test_cpu3.sh"`
+* **사유**: `CPU_MAX_OCCUPY`를 극단치(100)로 주어 연산 부하를 강제로 끌어올렸으며, 결과적으로 `CPU Threshold Violated! (59.4%)` 메시지와 함께 워치독이 프로세스를 강제 종료하는 증거를 확보했습니다.
+
+---
+
+## 3. 작성 문서(MD)와 요구조건 부합 여부 비교 표
+
+해당 문서들은 미션 요구사항 "최종 결과물: 3가지 장애 유형에 대해 GitHub Issue 형태의 리포트로 남길 것" 및 "각각의 필수 포함 항목(현상, 증거, 원인, 조치)을 채울 것"을 완벽히 만족하기 위해 각각 별도 파일로 쪼개어 작성되었습니다.
+
+| 문서명 (Markdown) | 작성 목적 및 이유 | 미션 요구사항 (문장 대입) | 달성 여부 및 내용 비교 |
+| :--- | :--- | :--- | :--- |
+| **`issue1_oom.md`** | 메모리 누수로 인한 시스템 붕괴 및 방어 기제 분석 보고 | *"환경변수(MEMORY_LIMIT)를 조정하여... Before & After 기록"* | **[완벽 충족]** 50MB(Before: 4초 뒤 사망) -> 500MB(After: 생존) 비교, 로그 및 현상 발췌 |
+| **`issue2_cpu.md`** | 프로세스의 자원 독점으로 인한 레이턴시 및 Watchdog 강제 종료 증명 | *"특정 프로세스의 CPU 사용률 급격히 상승... 과점유 방지 정책"* | **[완벽 충족]** 100% 임계치 설정 시 59.4% 도달 후 킬링되는 로그 확보 및 OS 스케줄링 이론 서술 |
+| **`issue3_deadlock.md`** | 멀티스레딩 간 순환 자원 대기(Deadlock)에 따른 시스템 Hang 보고 | *"프로세스가 살아있으나 CPU/메모리 변화 없음... 데드락 재현/회피"* | **[완벽 충족]** PID는 생존하나 CPU 0.1%로 정체됨, Shared_Memory와 Socket_Pool 상호 락킹(Lock) 현상 캡처 |
+| **`bonus_scheduling.md`** | 어플리케이션에 내장된 스케줄러의 태스크 분배 알고리즘 리버스 엔지니어링 | *"프로세스 간 실행 순서 교체 주기 패턴화... 기법 논리적 추론"* | **[완벽 충족]** 로그에서 Context Switching 없이 100% 완료 후 다음 작업으로 넘어가는 패턴을 잡아내 FCFS 도출 |
+
+---
+
+## 4. 심층 면접 / Q&A 대비용 딥다이브 (Deep-Dive) 지식
+
+누군가 보고서의 결과나 진행 과정에 대해 기술적인 질문을 던졌을 때 방어하고 대처할 수 있는 깊이 있는 배경 지식입니다.
+
+### Q1. OOM 상황에서 MEM 퍼센티지가 왜 OS 모니터(monitor.log)에서는 0.0%로 보였나?
+> **대처법**: "Docker 컨테이너에 할당된 호스트(Mac)의 전체 물리 메모리 모수가 매우 크기 때문입니다. 애플리케이션의 힙 메모리는 25MB -> 50MB로 명확히 증가(Leak)하고 있었으나, 전체 시스템 RAM(예: 16GB) 대비 50MB는 0.3%에 불과하므로 `ps` 명령어의 `%mem` 출력에서는 소수점 이하가 버림/반올림되어 0.0%로 표기된 것입니다. 이는 관제 데이터의 맹점을 애플리케이션 내부 로그(`app_oom.log`)로 크로스체크하여 잡아낸 트러블슈팅의 훌륭한 사례입니다."
+
+### Q2. CPU Spike 시 Watchdog은 왜 시스템을 죽이는가? OS가 알아서 조절하지 못하나?
+> **대처법**: "현대 OS는 선점형 멀티태스킹(Preemptive Multitasking)을 지원하므로 프로세스가 독점하려 해도 OS가 강제로 CPU를 뺏어(Context Switch) 분배합니다. 그러나 특정 프로세스가 쉬지 않고 연산(Spin-lock, 무한 루프)을 계속 돌리면, 해당 프로세스가 배정받는 타임 슬라이스(Time Slice) 내내 CPU 코어가 100% 풀로드로 돌아갑니다. 이로 인해 전체 시스템의 열 발생(Thermal Throttling) 및 다른 데몬들의 반응 지연(Latency)이 생깁니다. 따라서 안정성이 중요한 엔터프라이즈 환경에서는 앱 내부에 Watchdog 프로세스를 둬서 한계선(Threshold)을 넘는 비정상 스레드를 자체적으로 `SIGKILL` 또는 `SIGTERM` 처리하는 것입니다."
+
+### Q3. Deadlock(교착 상태) 환경에서 CPU 사용률이 치솟지 않고 왜 바닥(0.1%)을 치는가?
+> **대처법**: "스레드들이 서로의 자원을 기다리며 무한 대기(BLOCKED) 상태에 진입하면, OS 스케줄러는 해당 스레드들을 '대기 큐(Wait Queue)'로 강등시킵니다. 대기 큐에 있는 프로세스는 CPU를 할당받지 못하므로 연산 자체가 발생하지 않아 CPU 점유율은 0%에 수렴하게 됩니다. 즉, '연산을 못해서 멈춘 상태'이므로 과점유(CPU Spike)와는 정반대의 현상이 나타납니다. 이를 **Hang(행) 현상**이라고 부릅니다."
+
+### Q4. FCFS(First-Come, First-Served) 스케줄링이 현대 웹서버에서 안 쓰이는 이유는?
+> **대처법**: "FCFS는 '호위 효과(Convoy Effect)'라는 치명적 단점이 있습니다. 예를 들어 10초가 걸리는 무거운 배치 작업이 먼저 들어오고, 0.1초면 끝나는 단순 웹페이지 응답 요청 100개가 뒤이어 들어왔다고 가정해 보겠습니다. 단순 요청 100개는 맨 앞의 10초짜리 작업이 끝날 때까지 아무것도 못하고 기다려야 합니다. 따라서 실시간 응답이 생명인 Nginx, Tomcat 같은 웹서버에서는 라운드 로빈(Round-Robin) 기반의 시분할이나 이벤트 드리븐(Event-driven) 비동기 스케줄링을 채택합니다."
