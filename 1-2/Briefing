@@ -1,106 +1,260 @@
-# 시스템 트러블슈팅 미션 종합 브리핑 및 심층 가이드
+# 🧪 B1-2 Mission — Linux 장애 재현 및 원인 분석
 
-본 문서는 진행된 모든 태스크의 세부 실행 명령어, 코드, 사유를 브리핑하고 어떠한 질문에도 방어할 수 있도록 심층적인 추가 지식을 제공하기 위해 작성되었습니다.
+## 📌 미션 소개
+
+이 레포지토리는 **B1-2 Linux 장애 분석 미션**을 수행하기 위한 프로젝트입니다.
+
+이번 미션의 핵심은 단순히 실행파일을 실행하는 것이 아니라,  
+하나의 Linux 실행파일을 서로 다른 조건에서 실행하여 **메모리 누수, CPU 과점유, 데드락** 같은 장애를 재현하고, Linux 명령어와 로그를 통해 원인을 분석하는 것입니다.
+
+즉, 이 미션은 다음 질문에 답하는 훈련입니다.
+
+> “프로그램이 비정상 상태에 빠졌을 때,  
+> Linux 운영체제 관점에서 무엇이 일어났는지 어떻게 증명할 수 있는가?”
 
 ---
 
-## 1. Orbstack 및 운영 환경 검증 보고
+## 🎯 미션 목표
 
-**Q. 현재 사용자의 Orbstack에서 실행한 것이 맞는가? 그리고 어떻게 확인 가능한가?**
-* **결론**: 네, 맞습니다.
-* **확인 방법 및 증거**: 
-  1. 호스트 Mac 환경(Apple Silicon, ARM64)에서 제공된 바이너리(`agent-leak-app-x86`)를 직접 실행했을 때 `cannot execute binary file` 에러가 발생했습니다. 이는 해당 파일이 Linux 전용 ELF 바이너리이기 때문입니다.
-  2. 이를 구동하기 위해 Docker를 사용했으며, 백그라운드 태스크 로그(`#0 building with "orbstack" instance using docker driver`)를 통해 사용자 환경의 Docker Daemon이 **Orbstack**을 통해 구동되고 있음이 명확히 확인되었습니다.
-  3. `docker run --platform linux/amd64 ubuntu:22.04`를 통해 Orbstack의 Rosetta 2 x86 에뮬레이션 기능을 활용해 `amd64` 아키텍처 컨테이너를 가동하여 바이너리 호환성 문제를 해결했습니다.
+이 미션의 목표는 다음과 같습니다.
+
+- 동일한 실행파일을 CASE별 환경변수로 다르게 실행한다.
+- 메모리, CPU, 스레드 관련 장애를 재현한다.
+- 프로세스 상태, 리소스 사용량, 포트 상태, 종료 코드를 확인한다.
+- 로그와 명령어 결과를 근거로 장애 원인을 분석한다.
+- GitHub Issue에 CASE별 증거자료와 분석 결과를 기록한다.
+- 장애 상황을 단순 실행 결과가 아니라, 운영체제 관점에서 설명할 수 있도록 정리한다.
 
 ---
 
-## 2. 세부 진행 Task, 실행 명령어 및 소스 코드 총망라
+## 🧱 전체 구조
 
-### Task 1: 컨테이너 환경 구축 및 보안 회피 세팅
-* **사유**: `agent-leak-app`은 내부적으로 `root` 권한 실행을 원천 차단(Forbidden)하는 로직(`[1/6] Checking User Account [FAIL]`)이 있습니다. Docker의 기본 유저는 `root`이므로 이를 회피하기 위해 전용 유저(`agentuser`)를 생성하고 권한을 부여해야 했습니다.
-* **사용된 Dockerfile (설정 내용)**:
-```dockerfile
-FROM ubuntu:22.04
-RUN apt-get update && apt-get install -y procps
-# root 실행 방어 우회를 위한 신규 유저 생성
-RUN useradd -m agentuser
-WORKDIR /app
-COPY agent-leak-app-x86 /app/
-# 요구사항에 명시된 필수 환경변수 디렉터리 및 키 파일 세팅
-ENV AGENT_HOME=/app/agent_home
-RUN mkdir -p $AGENT_HOME/upload_files $AGENT_HOME/api_keys $AGENT_HOME/logs
-RUN echo "agent_api_key_test" > $AGENT_HOME/api_keys/secret.key
-# 권한 양도 후 해당 유저로 실행 셸 변경
-RUN chown -R agentuser:agentuser /app
-USER agentuser
-CMD ["/bin/bash"]
+이번 미션은 하나의 실행파일을 사용합니다.
+
+```text
+인텔: agent-leak-app-x86 애플 실리콘: agent-leak-app-arm64
+        │
+        ├── CASE 1: 메모리 제한 환경
+        ├── CASE 2: CPU 과점유 환경
+        └── CASE 3: 멀티스레드 데드락 환경
 ```
-* **실행 명령어**: 
-  - `docker build --no-cache --platform linux/amd64 -t agent-leak-test-amd64 .` (캐시 없이 명시적 x86 아키텍처로 빌드)
-  - `docker run --platform linux/amd64 -d --name agent-test-container agent-leak-test-amd64 sleep 3600` (백그라운드 컨테이너 유지)
 
-### Task 2: OS 관제 툴 (monitor.sh) 제작
-* **사유**: 미션 요구사항에서 OS 수준의 증거자료를 요구했으나 제공된 스크립트가 없어, Linux의 `ps` 명령어를 활용하여 PID를 1초마다 추적해 CPU와 MEM 사용률을 로깅하는 스크립트를 직접 작성했습니다.
-* **사용된 코드 (`monitor.sh`)**:
+실행파일은 동일하지만, 실행할 때 전달하는 환경변수 값에 따라 다른 장애 상황이 발생합니다.
+
+```text
+MEMORY_LIMIT
+CPU_MAX_OCCUPY
+MULTI_THREAD_ENABLE
+```
+
+즉, CASE 1·2·3은 서로 다른 프로그램이 아니라,  
+**같은 프로그램을 다른 실행 조건으로 테스트하는 구조**입니다.
+
+---
+
+## 🖥️ 실행 환경
+
+이 미션은 macOS에서 OrbStack을 이용해 Ubuntu Linux 환경을 만들고 수행합니다.
+
+```text
+macOS
+  ↓
+OrbStack
+  ↓
+Ubuntu Linux
+  ↓
+agent-leak-app-x86 혹은 agent-leak-app-arm64 실행
+  ↓
+CASE별 장애 재현 및 분석
+```
+
+B1-1 미션과 동일하게 OrbStack의 Ubuntu 환경을 사용할 수 있으며, 별도의 VirtualBox 설치는 필수는 아닙니다.
+
+---
+
+## 🧪 CASE별 테스트 개요
+
+| CASE | 테스트 환경 | 장애 유형 | 핵심 학습 |
+|---|---|---|---|
+| CASE 1 | 메모리 제한 환경 | 메모리 누수 / 강제 종료 | Memory Leak, OOM, SIGKILL, Exit Code 137 |
+| CASE 2 | CPU 과점유 환경 | CPU 임계값 초과 / Watchdog 종료 | CPU Usage, Watchdog, SIGTERM, Exit Code 143 |
+| CASE 3 | 멀티스레드 환경 | 데드락 / Hang | Thread, Lock, Deadlock, Blocking |
+
+---
+
+## 🧠 CASE 1 — 메모리 제한 환경에서의 메모리 누수 분석
+
+### 📌 목적
+
+CASE 1은 프로그램의 메모리 사용량이 계속 증가하다가 제한값을 초과하는 상황을 재현합니다.
+
+이 CASE를 통해 메모리 누수, 메모리 제한, SIGKILL, 종료 코드 137의 관계를 학습합니다.
+
+### 🧪 대표 실행 조건
+
 ```bash
-#!/bin/bash
-TARGET_PROC="agent-leak-app-x86"
-# pidof를 통해 대상 프로세스의 PID를 추출
-PID=$(pidof agent-leak-app-x86 | awk '{print $1}')
-while kill -0 $PID 2>/dev/null; do
-    # -o %cpu,%mem 포맷을 활용하여 헤더 제외(tail -n +2)하고 수치만 추출
-    STATS=$(ps -p $PID -o %cpu,%mem | tail -n +2)
-    if [ -n "$STATS" ]; then
-        CPU=$(echo "$STATS" | awk '{print $1}')
-        MEM=$(echo "$STATS" | awk '{print $2}')
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] PROCESS:agent-leak-app-x86 PID:$PID CPU:$CPU% MEM:$MEM%" >> /app/monitor.log
-    fi
-    sleep 1
-done
+MEMORY_LIMIT=60 CPU_MAX_OCCUPY=20 MULTI_THREAD_ENABLE=false ./agent-leak-app-x86
 ```
 
-### Task 3~5: 3대 장애 시나리오별 실행 및 데이터 수집
-각 시나리오는 환경변수를 다르게 세팅한 실행 셸 스크립트(`test_oom.sh`, `test_cpu3.sh`, `test_deadlock.sh`)를 만들어 컨테이너 내부로 복사(`docker cp`) 후 실행(`docker exec`)하는 방식으로 진행했습니다.
+### 🔍 관찰 흐름
 
-**[예시: CPU Spike 테스트 스크립트 및 명령어]**
+```text
+프로그램 실행
+   ↓
+메모리 사용량 증가
+   ↓
+MEMORY_LIMIT 초과
+   ↓
+SIGKILL 발생
+   ↓
+종료 코드 137 확인
+```
+
+### 📚 학습 포인트
+
+- 메모리 누수는 무엇인가?
+- OOM은 메모리 누수와 어떻게 다른가?
+- `SIGKILL`은 어떤 시그널인가?
+- 종료 코드 `137`은 왜 발생하는가?
+- 종료 코드만으로 OOM을 확정할 수 있는가?
+- 프로세스의 메모리 사용량은 어떻게 확인하는가?
+
+### ✅ 핵심 정리
+
+> 메모리 누수는 원인이고,  
+> OOM 또는 SIGKILL 종료는 결과입니다.
+
+종료 코드 `137`은 일반적으로 `SIGKILL`에 의해 프로세스가 종료되었음을 의미합니다.  
+다만 `137`이라는 결과만으로는 실제 OOM Kill인지, 프로그램 내부 로직에 의한 강제 종료인지를 단정할 수 없습니다.
+
+따라서 CASE 1에서는 다음 증거를 함께 확인하는 것이 중요합니다.
+
+- 실행 로그
+- 메모리 증가 흐름
+- 종료 코드
+- 커널 로그 또는 컨테이너 상태
+- SIGKILL 발생 여부
+
+---
+
+## 🔥 CASE 2 — CPU 과점유 및 Watchdog 종료 분석
+
+### 📌 목적
+
+CASE 2는 프로그램이 CPU를 과도하게 점유하는 상황을 재현하고, Watchdog이 이를 감지해 종료하는 흐름을 분석합니다.
+
+이 CASE를 통해 CPU 사용률 증가, Watchdog 감지, SIGTERM, 종료 코드 143의 관계를 학습합니다.
+
+### 🧪 대표 실행 조건
+
 ```bash
-# test_cpu.sh 내부 코드
-export MEMORY_LIMIT=500
-export CPU_MAX_OCCUPY=100
-export MULTI_THREAD_ENABLE=false
-/app/agent-leak-app-x86 > /app/app_cpu3.log 2>&1 &
+MEMORY_LIMIT=512 CPU_MAX_OCCUPY=80 MULTI_THREAD_ENABLE=false ./agent-leak-app-x86
 ```
-* **명령어**: `docker exec -u agentuser agent-test-container /bin/bash -c "/app/test_cpu3.sh"`
-* **사유**: `CPU_MAX_OCCUPY`를 극단치(100)로 주어 연산 부하를 강제로 끌어올렸으며, 결과적으로 `CPU Threshold Violated! (59.4%)` 메시지와 함께 워치독이 프로세스를 강제 종료하는 증거를 확보했습니다.
+
+### 🔍 관찰 흐름
+
+```text
+프로그램 실행
+   ↓
+CPU 사용률 증가
+   ↓
+CPU 임계값 초과
+   ↓
+Watchdog 감지
+   ↓
+SIGTERM 종료
+```
+
+### 📚 학습 포인트
+
+- CPU 사용률은 어떻게 확인하는가?
+- CPU 과점유 상태는 어떤 문제를 만들 수 있는가?
+- Watchdog은 어떤 역할을 하는가?
+- `SIGTERM`과 `SIGKILL`은 어떻게 다른가?
+- 종료 코드 `143`은 무엇을 의미하는가?
+- CPU 부하가 시스템 전체에 어떤 영향을 줄 수 있는가?
+
+### ✅ 핵심 정리
+
+> CASE 2는 CPU 과점유 상태를 감지하고,  
+> 비정상 프로세스를 안전하게 종료하는 흐름을 배우는 단계입니다.
+
+`SIGTERM`은 프로세스에게 정상 종료를 요청하는 시그널입니다.  
+`SIGKILL`과 달리 프로그램이 종료 처리 로직을 수행할 기회가 있을 수 있습니다.
+
+| 구분 | SIGTERM | SIGKILL |
+|---|---|---|
+| 시그널 번호 | 15 | 9 |
+| 의미 | 종료 요청 | 강제 종료 |
+| 프로그램 처리 가능 여부 | 가능 | 불가능 |
+| 대표 종료 코드 | 143 | 137 |
+| 특징 | 정상 종료 유도 | 즉시 종료 |
 
 ---
 
-## 3. 작성 문서(MD)와 요구조건 부합 여부 비교 표
+## 🧵 CASE 3 — 멀티스레드 환경에서의 데드락 분석
 
-해당 문서들은 미션 요구사항 "최종 결과물: 3가지 장애 유형에 대해 GitHub Issue 형태의 리포트로 남길 것" 및 "각각의 필수 포함 항목(현상, 증거, 원인, 조치)을 채울 것"을 완벽히 만족하기 위해 각각 별도 파일로 쪼개어 작성되었습니다.
+### 📌 목적
 
-| 문서명 (Markdown) | 작성 목적 및 이유 | 미션 요구사항 (문장 대입) | 달성 여부 및 내용 비교 |
-| :--- | :--- | :--- | :--- |
-| **`issue1_oom.md`** | 메모리 누수로 인한 시스템 붕괴 및 방어 기제 분석 보고 | *"환경변수(MEMORY_LIMIT)를 조정하여... Before & After 기록"* | **[완벽 충족]** 50MB(Before: 4초 뒤 사망) -> 500MB(After: 생존) 비교, 로그 및 현상 발췌 |
-| **`issue2_cpu.md`** | 프로세스의 자원 독점으로 인한 레이턴시 및 Watchdog 강제 종료 증명 | *"특정 프로세스의 CPU 사용률 급격히 상승... 과점유 방지 정책"* | **[완벽 충족]** 100% 임계치 설정 시 59.4% 도달 후 킬링되는 로그 확보 및 OS 스케줄링 이론 서술 |
-| **`issue3_deadlock.md`** | 멀티스레딩 간 순환 자원 대기(Deadlock)에 따른 시스템 Hang 보고 | *"프로세스가 살아있으나 CPU/메모리 변화 없음... 데드락 재현/회피"* | **[완벽 충족]** PID는 생존하나 CPU 0.1%로 정체됨, Shared_Memory와 Socket_Pool 상호 락킹(Lock) 현상 캡처 |
-| **`bonus_scheduling.md`** | 어플리케이션에 내장된 스케줄러의 태스크 분배 알고리즘 리버스 엔지니어링 | *"프로세스 간 실행 순서 교체 주기 패턴화... 기법 논리적 추론"* | **[완벽 충족]** 로그에서 Context Switching 없이 100% 완료 후 다음 작업으로 넘어가는 패턴을 잡아내 FCFS 도출 |
+CASE 3은 멀티스레드 환경에서 두 스레드가 서로 자원을 기다리며 멈추는 데드락 상황을 재현합니다.
+
+이 CASE를 통해 Thread, Lock, Deadlock, Blocking, Hang 상태를 학습합니다.
+
+### 🧪 대표 실행 조건
+
+```bash
+MEMORY_LIMIT=512 CPU_MAX_OCCUPY=20 MULTI_THREAD_ENABLE=true ./agent-leak-app-x86
+```
+
+### 🔍 관찰 흐름
+
+```text
+Thread 1: A 자원 Lock 획득
+Thread 2: B 자원 Lock 획득
+
+Thread 1: B 자원 대기
+Thread 2: A 자원 대기
+
+결과: 서로 영원히 대기
+```
+
+### 📚 학습 포인트
+
+- Thread는 무엇인가?
+- Lock은 왜 필요한가?
+- Deadlock은 어떻게 발생하는가?
+- Hang 상태는 프로세스 종료와 어떻게 다른가?
+- 프로세스가 살아 있어도 정상 동작이 아닐 수 있는 이유는 무엇인가?
+- 멀티스레드 프로그램에서 자원 획득 순서가 왜 중요한가?
+
+### ✅ 핵심 정리
+
+> 프로세스가 살아 있다고 해서  
+> 애플리케이션이 정상 동작 중이라는 뜻은 아닙니다.
+
+CASE 3에서는 프로세스가 종료되지 않고 살아 있을 수 있습니다.  
+하지만 내부 스레드가 서로 Lock을 기다리며 멈춰 있다면 실제 작업은 진행되지 않습니다.
+
+즉, CASE 3의 핵심은 다음입니다.
+
+```text
+프로세스 생존 여부 ≠ 서비스 정상 동작 여부
+```
 
 ---
 
-## 4. 심층 면접 / Q&A 대비용 딥다이브 (Deep-Dive) 지식
+## 🛠️ 주요 확인 명령어
 
-누군가 보고서의 결과나 진행 과정에 대해 기술적인 질문을 던졌을 때 방어하고 대처할 수 있는 깊이 있는 배경 지식입니다.
+미션 수행 중에는 다음 명령어를 사용해 증거를 수집합니다.
 
-### Q1. OOM 상황에서 MEM 퍼센티지가 왜 OS 모니터(monitor.log)에서는 0.0%로 보였나?
-> **대처법**: "Docker 컨테이너에 할당된 호스트(Mac)의 전체 물리 메모리 모수가 매우 크기 때문입니다. 애플리케이션의 힙 메모리는 25MB -> 50MB로 명확히 증가(Leak)하고 있었으나, 전체 시스템 RAM(예: 16GB) 대비 50MB는 0.3%에 불과하므로 `ps` 명령어의 `%mem` 출력에서는 소수점 이하가 버림/반올림되어 0.0%로 표기된 것입니다. 이는 관제 데이터의 맹점을 애플리케이션 내부 로그(`app_oom.log`)로 크로스체크하여 잡아낸 트러블슈팅의 훌륭한 사례입니다."
+| 목적 | 명령어 | 설명 |
+|---|---|---|
+| 실행 권한 부여 | `chmod +x` | 실행파일을 실행 가능 상태로 변경 |
+| 프로세스 확인 | `ps`, `pgrep` | 프로그램이 실행 중인지 확인 |
+| CPU/메모리 확인 | `top`, `ps`, `free` | 리소스 사용량 확인 |
+| 포트 확인 | `ss -tulnp` | 열려 있는 포트 확인 |
+| 종료 코드 확인 | `echo $?` | 직전 프로세스의 종료 상태 확인 |
+| 로그 확인 | `cat`, `tail`, `grep` | 실행 로그와 오류 메시지 확인 |
+| 커널 로그 확인 | `dmesg`, `journalctl -k` | OOM Kill 등 커널 이벤트 확인 |
 
-### Q2. CPU Spike 시 Watchdog은 왜 시스템을 죽이는가? OS가 알아서 조절하지 못하나?
-> **대처법**: "현대 OS는 선점형 멀티태스킹(Preemptive Multitasking)을 지원하므로 프로세스가 독점하려 해도 OS가 강제로 CPU를 뺏어(Context Switch) 분배합니다. 그러나 특정 프로세스가 쉬지 않고 연산(Spin-lock, 무한 루프)을 계속 돌리면, 해당 프로세스가 배정받는 타임 슬라이스(Time Slice) 내내 CPU 코어가 100% 풀로드로 돌아갑니다. 이로 인해 전체 시스템의 열 발생(Thermal Throttling) 및 다른 데몬들의 반응 지연(Latency)이 생깁니다. 따라서 안정성이 중요한 엔터프라이즈 환경에서는 앱 내부에 Watchdog 프로세스를 둬서 한계선(Threshold)을 넘는 비정상 스레드를 자체적으로 `SIGKILL` 또는 `SIGTERM` 처리하는 것입니다."
-
-### Q3. Deadlock(교착 상태) 환경에서 CPU 사용률이 치솟지 않고 왜 바닥(0.1%)을 치는가?
-> **대처법**: "스레드들이 서로의 자원을 기다리며 무한 대기(BLOCKED) 상태에 진입하면, OS 스케줄러는 해당 스레드들을 '대기 큐(Wait Queue)'로 강등시킵니다. 대기 큐에 있는 프로세스는 CPU를 할당받지 못하므로 연산 자체가 발생하지 않아 CPU 점유율은 0%에 수렴하게 됩니다. 즉, '연산을 못해서 멈춘 상태'이므로 과점유(CPU Spike)와는 정반대의 현상이 나타납니다. 이를 **Hang(행) 현상**이라고 부릅니다."
-
-### Q4. FCFS(First-Come, First-Served) 스케줄링이 현대 웹서버에서 안 쓰이는 이유는?
-> **대처법**: "FCFS는 '호위 효과(Convoy Effect)'라는 치명적 단점이 있습니다. 예를 들어 10초가 걸리는 무거운 배치 작업이 먼저 들어오고, 0.1초면 끝나는 단순 웹페이지 응답 요청 100개가 뒤이어 들어왔다고 가정해 보겠습니다. 단순 요청 100개는 맨 앞의 10초짜리 작업이 끝날 때까지 아무것도 못하고 기다려야 합니다. 따라서 실시간 응답이 생명인 Nginx, Tomcat 같은 웹서버에서는 라운드 로빈(Round-Robin) 기반의 시분할이나 이벤트 드리븐(Event-driven) 비동기 스케줄링을 채택합니다."
+---
