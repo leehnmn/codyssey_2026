@@ -29,7 +29,7 @@
 >>> [SYSTEM] WATCHDOG: INITIATING EMERGENCY ABORT (SIGTERM) <<<  
 Terminated  
 ```
-
+///////////////////////////////////////////////////////after 비교결과 추가.
 <br>
 
 ### 🟡 monitor.log - 관제 로그 데이터  
