@@ -65,7 +65,7 @@
 [2026-07-18 21:49:51] PROCESS:agent-app-leak | PID:96735 | PORT:OK | SYS_CPU:2.0% | SYS_MEM:8.8% | 🔥PROC_CPU:0.3% | 🔥PROC_MEM:0.3% | 🔥RSS:31.55MB | DISK_USED:1%  
 ```
 
-
+////////////////////////////////after 비교 추가.
 
 
 <br><br>
