@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>프론트엔드 개발자 포트폴리오</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/app.js" defer></script>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header" id="header">
+    <div class="nav-container">
+      <a href="#" class="logo">Dev.Portfolio</a>
+      <div class="nav-controls">
+        <button id="theme-toggle" class="icon-btn" aria-label="테마 전환">🌙</button>
+        <button id="hamburger" class="hamburger-btn" aria-label="메뉴 열기">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+      <nav class="nav-menu" id="nav-menu">
+        <ul class="nav-list">
+          <li><a href="#hero" class="nav-link">Home</a></li>
+          <li><a href="#about" class="nav-link">About</a></li>
+          <li><a href="#skills" class="nav-link">Skills</a></li>
+          <li><a href="#projects" class="nav-link">Projects</a></li>
+          <li><a href="#contact" class="nav-link">Contact</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero Section -->
+    <section id="hero" class="hero-section section-observe">
+      <div class="container hero-content">
+        <h1 class="hero-title">안녕하세요, <br><span id="typing-text"></span></h1>
+        <p class="hero-desc">기본기와 사용자 경험을 중시하는 웹 개발자입니다.</p>
+        <div class="hero-actions">
+          <a href="#projects" class="btn btn-primary">Projects 보기</a>
+          <a href="#contact" class="btn btn-secondary">Contact Me</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="about-section section-observe">
+      <div class="container">
+        <h2 class="section-title">About Me</h2>
+        <div class="about-grid">
+          <div class="about-img-wrap">
+            <img src="images/profile.jpg" alt="개발자 프로필 사진" class="profile-img">
+          </div>
+          <div class="about-text">
+            <p>웹 표준과 접근성을 고려한 시맨틱 마크업을 지향하며, UI 컴포넌트의 상태 흐름을 깊이 있게 고민합니다.</p>
+            <p>Vanilla JavaScript를 통해 브라우저 렌더링 엔진의 동작 방식을 학습하고, 확장성 높은 코드를 작성합니다.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Skills Section -->
+    <section id="skills" class="skills-section section-observe">
+      <div class="container">
+        <h2 class="section-title">Skills</h2>
+        <ul class="skills-list">
+          <li class="skill-tag">HTML5</li>
+          <li class="skill-tag">CSS3 / Grid / Flexbox</li>
+          <li class="skill-tag">JavaScript (ES6+)</li>
+          <li class="skill-tag">Git / GitHub</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Projects Section (GitHub API) -->
+    <section id="projects" class="projects-section section-observe">
+      <div class="container">
+        <h2 class="section-title">Projects</h2>
+        <div id="projects-container" class="projects-grid">
+          <!-- JS에서 상태에 따라 동적 렌더링 -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="contact-section section-observe">
+      <div class="container">
+        <h2 class="section-title">Contact</h2>
+        <form id="contact-form" class="contact-form" novalidate>
+          <div class="form-group">
+            <label for="name">이름</label>
+            <input type="text" id="name" name="name" required>
+            <span class="error-msg" id="name-error"></span>
+          </div>
+          <div class="form-group">
+            <label for="email">이메일</label>
+            <input type="email" id="email" name="email" required>
+            <span class="error-msg" id="email-error"></span>
+          </div>
+          <div class="form-group">
+            <label for="message">메시지</label>
+            <textarea id="message" name="message" rows="5" required></textarea>
+            <span class="error-msg" id="message-error"></span>
+          </div>
+          <button type="submit" class="btn btn-primary">보내기</button>
+          <div id="form-feedback" class="form-feedback"></div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <!-- Scroll Top Button -->
+  <button id="scroll-top" class="scroll-top-btn" aria-label="맨 위로 가기">↑</button>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-content">
+      <p>&copy; 2026 Developer Name. All rights reserved.</p>
+      <div class="footer-links">
+        <a href="https://github.com" target="_blank" rel="noopener noreferrer">GitHub</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>
