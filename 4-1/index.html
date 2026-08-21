@@ -3,21 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>프론트엔드 개발자 포트폴리오</title>
+  <title>Developer Portfolio</title>
   <link rel="stylesheet" href="css/style.css">
   <script src="js/app.js" defer></script>
 </head>
 <body>
-  <!-- Header -->
+  <!-- Header (Flexbox 기반 & 테마/햄버거 컨트롤) -->
   <header class="header" id="header">
     <div class="nav-container">
-      <a href="#" class="logo">Dev.Portfolio</a>
+      <a href="#hero" class="logo">Dev.Folio</a>
+      
       <div class="nav-controls">
-        <button id="theme-toggle" class="icon-btn" aria-label="테마 전환">🌙</button>
-        <button id="hamburger" class="hamburger-btn" aria-label="메뉴 열기">
+        <button id="theme-toggle" class="icon-btn" aria-label="다크 모드 토글">🌙</button>
+        <button id="hamburger" class="hamburger-btn" aria-label="메뉴 열기/닫기" aria-expanded="false">
           <span></span><span></span><span></span>
         </button>
       </div>
+
       <nav class="nav-menu" id="nav-menu">
         <ul class="nav-list">
           <li><a href="#hero" class="nav-link">Home</a></li>
@@ -35,10 +37,10 @@
     <section id="hero" class="hero-section section-observe">
       <div class="container hero-content">
         <h1 class="hero-title">안녕하세요, <br><span id="typing-text"></span></h1>
-        <p class="hero-desc">기본기와 사용자 경험을 중시하는 웹 개발자입니다.</p>
+        <p class="hero-desc">사용자 경험과 웹 표준, 견고한 상태 설계를 고민하는 프론트엔드 개발자입니다.</p>
         <div class="hero-actions">
-          <a href="#projects" class="btn btn-primary">Projects 보기</a>
-          <a href="#contact" class="btn btn-secondary">Contact Me</a>
+          <a href="#projects" class="btn btn-primary">프로젝트 탐색</a>
+          <a href="#contact" class="btn btn-secondary">문의하기</a>
         </div>
       </div>
     </section>
@@ -52,8 +54,8 @@
             <img src="images/profile.jpg" alt="개발자 프로필 사진" class="profile-img">
           </div>
           <div class="about-text">
-            <p>웹 표준과 접근성을 고려한 시맨틱 마크업을 지향하며, UI 컴포넌트의 상태 흐름을 깊이 있게 고민합니다.</p>
-            <p>Vanilla JavaScript를 통해 브라우저 렌더링 엔진의 동작 방식을 학습하고, 확장성 높은 코드를 작성합니다.</p>
+            <p>시맨틱 HTML과 반응형 CSS를 기반으로 모든 디바이스에서 쾌적한 접근성을 보장합니다.</p>
+            <p>Vanilla JavaScript의 DOM 이벤트 루프와 비동기 처리를 이해하며, 상태 변화 중심의 UI 렌더링을 지향합니다.</p>
           </div>
         </div>
       </div>
@@ -64,53 +66,62 @@
       <div class="container">
         <h2 class="section-title">Skills</h2>
         <ul class="skills-list">
-          <li class="skill-tag">HTML5</li>
-          <li class="skill-tag">CSS3 / Grid / Flexbox</li>
+          <li class="skill-tag">HTML5 (Semantic)</li>
+          <li class="skill-tag">CSS3 (Grid / Flexbox)</li>
           <li class="skill-tag">JavaScript (ES6+)</li>
-          <li class="skill-tag">Git / GitHub</li>
+          <li class="skill-tag">REST API / Fetch</li>
+          <li class="skill-tag">Git / GitHub Pages</li>
         </ul>
       </div>
     </section>
 
-    <!-- Projects Section (GitHub API) -->
+    <!-- Projects Section (GitHub API 연동 & 언어별 필터) -->
     <section id="projects" class="projects-section section-observe">
       <div class="container">
         <h2 class="section-title">Projects</h2>
-        <div id="projects-container" class="projects-grid">
-          <!-- JS에서 상태에 따라 동적 렌더링 -->
+        
+        <!-- 언어 필터 버튼 영역 -->
+        <div id="filter-container" class="filter-group">
+          <button class="filter-btn active" data-lang="all">All</button>
         </div>
+
+        <!-- 동적 렌더링 컨테이너 -->
+        <div id="projects-container" class="projects-grid"></div>
       </div>
     </section>
 
-    <!-- Contact Section -->
+    <!-- Contact Section (폼 유효성 검사 적용) -->
     <section id="contact" class="contact-section section-observe">
       <div class="container">
         <h2 class="section-title">Contact</h2>
         <form id="contact-form" class="contact-form" novalidate>
           <div class="form-group">
-            <label for="name">이름</label>
-            <input type="text" id="name" name="name" required>
-            <span class="error-msg" id="name-error"></span>
+            <label for="user-name">이름 <span class="req">*</span></label>
+            <input type="text" id="user-name" name="name" placeholder="홍길동" required autocomplete="name">
+            <span class="error-msg" id="name-error" aria-live="polite"></span>
           </div>
+
           <div class="form-group">
-            <label for="email">이메일</label>
-            <input type="email" id="email" name="email" required>
-            <span class="error-msg" id="email-error"></span>
+            <label for="user-email">이메일 <span class="req">*</span></label>
+            <input type="email" id="user-email" name="email" placeholder="example@domain.com" required autocomplete="email">
+            <span class="error-msg" id="email-error" aria-live="polite"></span>
           </div>
+
           <div class="form-group">
-            <label for="message">메시지</label>
-            <textarea id="message" name="message" rows="5" required></textarea>
-            <span class="error-msg" id="message-error"></span>
+            <label for="user-message">메시지 <span class="req">*</span></label>
+            <textarea id="user-message" name="message" rows="5" placeholder="프로젝트 제안 또는 문의사항을 남겨주세요." required></textarea>
+            <span class="error-msg" id="message-error" aria-live="polite"></span>
           </div>
-          <button type="submit" class="btn btn-primary">보내기</button>
-          <div id="form-feedback" class="form-feedback"></div>
+
+          <button type="submit" class="btn btn-primary submit-btn">메시지 보내기</button>
+          <div id="form-feedback" class="form-feedback" aria-live="assertive"></div>
         </form>
       </div>
     </section>
   </main>
 
   <!-- Scroll Top Button -->
-  <button id="scroll-top" class="scroll-top-btn" aria-label="맨 위로 가기">↑</button>
+  <button id="scroll-top" class="scroll-top-btn" aria-label="페이지 맨 위로 이동">↑</button>
 
   <!-- Footer -->
   <footer class="footer">
@@ -118,6 +129,7 @@
       <p>&copy; 2026 Developer Name. All rights reserved.</p>
       <div class="footer-links">
         <a href="https://github.com" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer">LinkedIn</a>
       </div>
     </div>
   </footer>
