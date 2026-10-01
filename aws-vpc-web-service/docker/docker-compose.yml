@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  web-service:
+    build: .
+    image: custom-web-nginx:1.0
+    container_name: cloud-web-container
+    restart: always
+    ports:
+      - "80:80"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
