@@ -1,0 +1,17 @@
+[Q14. [UPDATE] 반납예정일이 2024-04-10 이전인 미반납 건을 'OVERDUE'(연체)로 일괄 갱신]
+- 확인 목적: 대여 기한 초과 건에 대한 배치성 상태 갱신 작업 확인
+
+[실행 SQL 문]:
+UPDATE rental
+SET status = 'OVERDUE'
+WHERE status = 'RENTED' 
+  AND due_date < '2024-04-10'
+  AND return_date IS NULL;
+
+[실행 결과]:
+>> 작업 수행 완료! 검증 쿼리 실행 결과:
+rental_id | member_id | book_id | due_date   | status 
+----------+-----------+---------+------------+--------
+12        | 8         | 10      | 2024-04-08 | OVERDUE
+16        | 9         | 13      | 2024-04-03 | OVERDUE
+(영향을 받은/조회된 행 수: 2개)

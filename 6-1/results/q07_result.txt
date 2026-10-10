@@ -1,0 +1,33 @@
+[Q07. [LEFT JOIN] 전체 도서 목록과 도서별 누적 대여 횟수 집계 (미대여 도서 포함)]
+- 확인 목적: 대여 이력이 없는 비인기 도서도 누락되지 않고 0건으로 조회되는 LEFT JOIN의 특성 확인
+
+[실행 SQL 문]:
+SELECT 
+    b.book_id,
+    b.title,
+    b.author,
+    COUNT(r.rental_id) AS rental_count
+FROM book b
+LEFT JOIN rental r ON b.book_id = r.book_id
+GROUP BY b.book_id, b.title, b.author
+ORDER BY rental_count DESC, b.book_id ASC;
+
+[실행 결과]:
+book_id | title            | author       | rental_count
+--------+------------------+--------------+-------------
+6       | 클린 코드            | 로버트 C. 마틴    | 3           
+1       | 데미안              | 헤르만 헤세       | 2           
+5       | 돈의 속성            | 김승호          | 2           
+7       | 혼자 공부하는 머신러닝+딥러닝 | 박해선          | 2           
+8       | Do it! 점프 투 파이썬  | 박응용          | 2           
+2       | 1984             | 조지 오웰        | 1           
+3       | 사피엔스             | 유발 하라리       | 1           
+4       | 정의란 무엇인가         | 마이클 샌델       | 1           
+9       | 아주 작은 습관의 힘      | 제임스 클리어      | 1           
+10      | 총 균 쇠            | 재레드 다이아몬드    | 1           
+11      | 방구석 미술관          | 조원재          | 1           
+13      | 코스모스             | 칼 세이건        | 1           
+14      | 자본주의             | EBS 자본주의 제작팀 | 1           
+15      | 미움받을 용기          | 기시미 이치로      | 1           
+12      | 달과 6펜스           | 서머싯 몸        | 0           
+(조회된 총 행 수: 15개)

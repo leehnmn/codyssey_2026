@@ -1,0 +1,20 @@
+[Q11. [집계] 월별 도서 대여 건수 추이 및 상태별(반납/대여중/연체) 건수 분석]
+- 확인 목적: 날짜 함수(strftime)와 조건부 집계(CASE WHEN)를 결합한 월별 비즈니스 트렌드 분석
+
+[실행 SQL 문]:
+SELECT 
+    strftime('%Y-%m', rental_date) AS rental_month,
+    COUNT(*) AS total_rentals,
+    SUM(CASE WHEN status = 'RETURNED' THEN 1 ELSE 0 END) AS returned_count,
+    SUM(CASE WHEN status = 'RENTED' THEN 1 ELSE 0 END) AS active_rental_count,
+    SUM(CASE WHEN status = 'OVERDUE' THEN 1 ELSE 0 END) AS overdue_count
+FROM rental
+GROUP BY strftime('%Y-%m', rental_date)
+ORDER BY rental_month ASC;
+
+[실행 결과]:
+rental_month | total_rentals | returned_count | active_rental_count | overdue_count
+-------------+---------------+----------------+---------------------+--------------
+2024-03      | 11            | 9              | 0                   | 2            
+2024-04      | 9             | 0              | 9                   | 0            
+(조회된 총 행 수: 2개)

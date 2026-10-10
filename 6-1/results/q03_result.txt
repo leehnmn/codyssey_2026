@@ -1,0 +1,25 @@
+[Q03. 현재 대여 중인 도서 중 반납예정일 임박 상위 5건 조회]
+- 확인 목적: 반납 안내 알림 발송을 위해 마감 기한이 얼마 남지 않은 대여 건 우선 추출
+
+[실행 SQL 문]:
+SELECT 
+    rental_id,
+    member_id,
+    book_id,
+    rental_date,
+    due_date,
+    status
+FROM rental
+WHERE status = 'RENTED'
+ORDER BY due_date ASC
+LIMIT 5;
+
+[실행 결과]:
+rental_id | member_id | book_id | rental_date | due_date   | status
+----------+-----------+---------+-------------+------------+-------
+7         | 4         | 6       | 2024-04-01  | 2024-04-15 | RENTED
+13        | 1         | 8       | 2024-04-02  | 2024-04-16 | RENTED
+14        | 2         | 6       | 2024-04-03  | 2024-04-17 | RENTED
+15        | 3         | 11      | 2024-04-04  | 2024-04-18 | RENTED
+10        | 6         | 15      | 2024-04-05  | 2024-04-19 | RENTED
+(조회된 총 행 수: 5개)

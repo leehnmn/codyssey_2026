@@ -1,0 +1,23 @@
+[Q12. [서브쿼리] 가입 이후 한 번도 도서를 대여하지 않은 비활성 회원 조회]
+- 확인 목적: NOT IN / NOT EXISTS 서브쿼리를 통한 비활성/휴면 회원 마케팅 타겟 추출
+
+[실행 SQL 문]:
+SELECT 
+    member_id,
+    name,
+    email,
+    membership_tier,
+    join_date
+FROM member
+WHERE member_id NOT IN (
+    SELECT DISTINCT member_id 
+    FROM rental
+)
+ORDER BY member_id ASC;
+
+[실행 결과]:
+member_id | name | email                    | membership_tier | join_date 
+----------+------+--------------------------+-----------------+-----------
+11        | 임지훈  | jihoon.lim@example.com   | STANDARD        | 2024-04-10
+12        | 송채원  | chaewon.song@example.com | STANDARD        | 2024-04-20
+(조회된 총 행 수: 2개)

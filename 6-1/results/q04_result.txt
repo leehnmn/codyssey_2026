@@ -1,0 +1,21 @@
+[Q04. 최신 출판년도순 도서 페이징 조회 (3건 건너뛰고 3건 조회)]
+- 확인 목적: 웹/앱 서비스 페이징 처리를 위한 LIMIT과 OFFSET 동작 확인
+
+[실행 SQL 문]:
+SELECT 
+    book_id,
+    title,
+    author,
+    publish_year,
+    price
+FROM book
+ORDER BY publish_year DESC, title ASC
+LIMIT 3 OFFSET 3;
+
+[실행 결과]:
+book_id | title       | author  | publish_year | price
+--------+-------------+---------+--------------+------
+9       | 아주 작은 습관의 힘 | 제임스 클리어 | 2019         | 16000
+11      | 방구석 미술관     | 조원재     | 2018         | 16800
+3       | 사피엔스        | 유발 하라리  | 2015         | 22000
+(조회된 총 행 수: 3개)

@@ -1,0 +1,22 @@
+[보너스 2] 외래키(FK) 참조 무결성 제약조건 위반 실험
+- 실험 내용: 부모 테이블(member)에 존재하지 않는 회원(member_id = 9999)으로 대여(rental) 삽입 시도
+
+[시도한 SQL]:
+INSERT INTO rental (member_id, book_id, rental_date, due_date, status)
+VALUES (9999, 1, '2024-04-20', '2024-05-04', 'RENTED');
+
+[발생한 실제 DB 엔진 에러]:
+>> sqlite3.IntegrityError: FOREIGN KEY constraint failed
+
+[원인 분석]:
+- rental 테이블의 member_id 컬럼에는 FOREIGN KEY (member_id) REFERENCES member(member_id)
+  제약조건이 걸려 있습니다.
+- DB 엔진은 데이터를 삽입하기 전, 부모 테이블인 member에 member_id = 9999 레코드가
+  실제로 존재하는지 검사합니다.
+- 존재하지 않는 유령 회원의 ID를 참조하려고 하였으므로 참조 무결성(Referential Integrity)을
+  지키기 위해 DB 엔진 차원에서 삽입을 거부하고 에러를 발생시킵니다.
+
+[해결 방법]:
+1. 부모 테이블(member)에 member_id = 9999 회원을 먼저 INSERT하여 생성하거나,
+2. 실제로 등록되어 있는 올바른 회원의 ID(예: 1~12)를 지정하여 INSERT해야 합니다.
+

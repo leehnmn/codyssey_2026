@@ -1,0 +1,22 @@
+[Q02. 2024년 이후 가입한 VIP/GOLD 등급 회원 상위 5명 조회]
+- 확인 목적: 신규 가입자 중 VIP/GOLD 등급 프로모션 대상자 선별 및 다중 조건 필터링 확인
+
+[실행 SQL 문]:
+SELECT 
+    member_id,
+    name,
+    email,
+    membership_tier,
+    join_date
+FROM member
+WHERE join_date >= '2024-01-01' 
+  AND membership_tier IN ('VIP', 'GOLD')
+ORDER BY join_date ASC
+LIMIT 5;
+
+[실행 결과]:
+member_id | name | email                | membership_tier | join_date 
+----------+------+----------------------+-----------------+-----------
+6         | 강지아  | jia.kang@example.com | GOLD            | 2024-01-12
+10        | 한수아  | sua.han@example.com  | GOLD            | 2024-04-02
+(조회된 총 행 수: 2개)

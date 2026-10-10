@@ -1,0 +1,547 @@
+================================================================================
+스마트 도서관 대여 관리 시스템 - 핵심 SQL 쿼리 전체 실행 결과 리포트
+생성 일시: 2026-10-11 02:01:35
+================================================================================
+
+[Q01. IT/과학 카테고리 중 20,000원 이상 고가 도서 목록 조회]
+- 확인 목적: 특정 분류 내 고가 전문서적 필터링 및 가격 기준 정렬 확인
+
+[실행 SQL 문]:
+SELECT 
+    book_id,
+    title,
+    author,
+    price,
+    stock_quantity
+FROM book
+WHERE category_id = 4 AND price >= 20000
+ORDER BY price DESC;
+
+[실행 결과]:
+book_id | title            | author    | price | stock_quantity
+--------+------------------+-----------+-------+---------------
+6       | 클린 코드            | 로버트 C. 마틴 | 33000 | 2             
+7       | 혼자 공부하는 머신러닝+딥러닝 | 박해선       | 26000 | 3             
+(조회된 총 행 수: 2개)
+
+--------------------------------------------------------------------------------
+
+[Q02. 2024년 이후 가입한 VIP/GOLD 등급 회원 상위 5명 조회]
+- 확인 목적: 신규 가입자 중 VIP/GOLD 등급 프로모션 대상자 선별 및 다중 조건 필터링 확인
+
+[실행 SQL 문]:
+SELECT 
+    member_id,
+    name,
+    email,
+    membership_tier,
+    join_date
+FROM member
+WHERE join_date >= '2024-01-01' 
+  AND membership_tier IN ('VIP', 'GOLD')
+ORDER BY join_date ASC
+LIMIT 5;
+
+[실행 결과]:
+member_id | name | email                | membership_tier | join_date 
+----------+------+----------------------+-----------------+-----------
+6         | 강지아  | jia.kang@example.com | GOLD            | 2024-01-12
+10        | 한수아  | sua.han@example.com  | GOLD            | 2024-04-02
+(조회된 총 행 수: 2개)
+
+--------------------------------------------------------------------------------
+
+[Q03. 현재 대여 중인 도서 중 반납예정일 임박 상위 5건 조회]
+- 확인 목적: 반납 안내 알림 발송을 위해 마감 기한이 얼마 남지 않은 대여 건 우선 추출
+
+[실행 SQL 문]:
+SELECT 
+    rental_id,
+    member_id,
+    book_id,
+    rental_date,
+    due_date,
+    status
+FROM rental
+WHERE status = 'RENTED'
+ORDER BY due_date ASC
+LIMIT 5;
+
+[실행 결과]:
+rental_id | member_id | book_id | rental_date | due_date   | status
+----------+-----------+---------+-------------+------------+-------
+7         | 4         | 6       | 2024-04-01  | 2024-04-15 | RENTED
+13        | 1         | 8       | 2024-04-02  | 2024-04-16 | RENTED
+14        | 2         | 6       | 2024-04-03  | 2024-04-17 | RENTED
+15        | 3         | 11      | 2024-04-04  | 2024-04-18 | RENTED
+10        | 6         | 15      | 2024-04-05  | 2024-04-19 | RENTED
+(조회된 총 행 수: 5개)
+
+--------------------------------------------------------------------------------
+
+[Q04. 최신 출판년도순 도서 페이징 조회 (3건 건너뛰고 3건 조회)]
+- 확인 목적: 웹/앱 서비스 페이징 처리를 위한 LIMIT과 OFFSET 동작 확인
+
+[실행 SQL 문]:
+SELECT 
+    book_id,
+    title,
+    author,
+    publish_year,
+    price
+FROM book
+ORDER BY publish_year DESC, title ASC
+LIMIT 3 OFFSET 3;
+
+[실행 결과]:
+book_id | title       | author  | publish_year | price
+--------+-------------+---------+--------------+------
+9       | 아주 작은 습관의 힘 | 제임스 클리어 | 2019         | 16000
+11      | 방구석 미술관     | 조원재     | 2018         | 16800
+3       | 사피엔스        | 유발 하라리  | 2015         | 22000
+(조회된 총 행 수: 3개)
+
+--------------------------------------------------------------------------------
+
+[Q05. [INNER JOIN] 대여 중인 도서와 대여 회원 및 카테고리 상세 정보 종합 조회]
+- 확인 목적: 4개 테이블(rental, member, book, category)을 조인하여 대출 실황의 종합 상세 정보 확인
+
+[실행 SQL 문]:
+SELECT 
+    r.rental_id,
+    m.name AS member_name,
+    m.membership_tier,
+    b.title AS book_title,
+    c.category_name,
+    r.rental_date,
+    r.due_date
+FROM rental r
+INNER JOIN member m ON r.member_id = m.member_id
+INNER JOIN book b ON r.book_id = b.book_id
+INNER JOIN category c ON b.category_id = c.category_id
+WHERE r.status = 'RENTED'
+ORDER BY r.due_date ASC;
+
+[실행 결과]:
+rental_id | member_name | membership_tier | book_title       | category_name | rental_date | due_date  
+----------+-------------+-----------------+------------------+---------------+-------------+-----------
+7         | 정예은         | VIP             | 클린 코드            | IT/과학         | 2024-04-01  | 2024-04-15
+13        | 김민준         | VIP             | Do it! 점프 투 파이썬  | IT/과학         | 2024-04-02  | 2024-04-16
+14        | 이서연         | GOLD            | 클린 코드            | IT/과학         | 2024-04-03  | 2024-04-17
+15        | 박도윤         | SILVER          | 방구석 미술관          | 예술/디자인        | 2024-04-04  | 2024-04-18
+10        | 강지아         | GOLD            | 미움받을 용기          | 인문/철학         | 2024-04-05  | 2024-04-19
+17        | 한수아         | GOLD            | 돈의 속성            | 경제/경영         | 2024-04-06  | 2024-04-20
+18        | 정예은         | VIP             | 혼자 공부하는 머신러닝+딥러닝 | IT/과학         | 2024-04-07  | 2024-04-21
+19        | 한수아         | GOLD            | 자본주의             | 경제/경영         | 2024-04-08  | 2024-04-22
+20        | 윤하은         | SILVER          | 데미안              | 소설/문학         | 2024-04-09  | 2024-04-23
+(조회된 총 행 수: 9개)
+
+--------------------------------------------------------------------------------
+
+[Q06. [INNER JOIN] 도서별 카테고리 및 총 재고 자산 가치(가격 * 재고량) 계산 조회]
+- 확인 목적: 1:N 관계 조인과 수치 연산 컬럼을 조합하여 도서관 자산 가치 평가
+
+[실행 SQL 문]:
+SELECT 
+    b.book_id,
+    b.title,
+    c.category_name,
+    b.price,
+    b.stock_quantity,
+    (b.price * b.stock_quantity) AS total_inventory_value
+FROM book b
+INNER JOIN category c ON b.category_id = c.category_id
+ORDER BY total_inventory_value DESC;
+
+[실행 결과]:
+book_id | title            | category_name | price | stock_quantity | total_inventory_value
+--------+------------------+---------------+-------+----------------+----------------------
+3       | 사피엔스             | 인문/철학         | 22000 | 5              | 110000               
+8       | Do it! 점프 투 파이썬  | IT/과학         | 18800 | 5              | 94000                
+7       | 혼자 공부하는 머신러닝+딥러닝 | IT/과학         | 26000 | 3              | 78000                
+5       | 돈의 속성            | 경제/경영         | 17800 | 4              | 71200                
+6       | 클린 코드            | IT/과학         | 33000 | 2              | 66000                
+9       | 아주 작은 습관의 힘      | 자기계발          | 16000 | 4              | 64000                
+13      | 코스모스             | 자연/환경         | 21000 | 3              | 63000                
+15      | 미움받을 용기          | 인문/철학         | 14900 | 4              | 59600                
+10      | 총 균 쇠            | 역사/문화         | 28000 | 2              | 56000                
+4       | 정의란 무엇인가         | 인문/철학         | 18000 | 3              | 54000                
+2       | 1984             | 소설/문학         | 13000 | 4              | 52000                
+11      | 방구석 미술관          | 예술/디자인        | 16800 | 3              | 50400                
+1       | 데미안              | 소설/문학         | 12000 | 3              | 36000                
+14      | 자본주의             | 경제/경영         | 17000 | 2              | 34000                
+12      | 달과 6펜스           | 소설/문학         | 11000 | 2              | 22000                
+(조회된 총 행 수: 15개)
+
+--------------------------------------------------------------------------------
+
+[Q07. [LEFT JOIN] 전체 도서 목록과 도서별 누적 대여 횟수 집계 (미대여 도서 포함)]
+- 확인 목적: 대여 이력이 없는 비인기 도서도 누락되지 않고 0건으로 조회되는 LEFT JOIN의 특성 확인
+
+[실행 SQL 문]:
+SELECT 
+    b.book_id,
+    b.title,
+    b.author,
+    COUNT(r.rental_id) AS rental_count
+FROM book b
+LEFT JOIN rental r ON b.book_id = r.book_id
+GROUP BY b.book_id, b.title, b.author
+ORDER BY rental_count DESC, b.book_id ASC;
+
+[실행 결과]:
+book_id | title            | author       | rental_count
+--------+------------------+--------------+-------------
+6       | 클린 코드            | 로버트 C. 마틴    | 3           
+1       | 데미안              | 헤르만 헤세       | 2           
+5       | 돈의 속성            | 김승호          | 2           
+7       | 혼자 공부하는 머신러닝+딥러닝 | 박해선          | 2           
+8       | Do it! 점프 투 파이썬  | 박응용          | 2           
+2       | 1984             | 조지 오웰        | 1           
+3       | 사피엔스             | 유발 하라리       | 1           
+4       | 정의란 무엇인가         | 마이클 샌델       | 1           
+9       | 아주 작은 습관의 힘      | 제임스 클리어      | 1           
+10      | 총 균 쇠            | 재레드 다이아몬드    | 1           
+11      | 방구석 미술관          | 조원재          | 1           
+13      | 코스모스             | 칼 세이건        | 1           
+14      | 자본주의             | EBS 자본주의 제작팀 | 1           
+15      | 미움받을 용기          | 기시미 이치로      | 1           
+12      | 달과 6펜스           | 서머싯 몸        | 0           
+(조회된 총 행 수: 15개)
+
+--------------------------------------------------------------------------------
+
+[Q08. [LEFT JOIN] 전체 회원 목록과 현재 대여 중인 도서 목록 조회 (미대여 회원 포함)]
+- 확인 목적: 전체 회원 중 현재 도서를 대출 중인 회원과 대출하지 않은 회원을 한눈에 파악
+
+[실행 SQL 문]:
+SELECT 
+    m.member_id,
+    m.name AS member_name,
+    m.membership_tier,
+    COALESCE(b.title, '(대여 중인 도서 없음)') AS currently_rented_book,
+    r.due_date
+FROM member m
+LEFT JOIN rental r ON m.member_id = r.member_id AND r.status = 'RENTED'
+LEFT JOIN book b ON r.book_id = b.book_id
+ORDER BY m.member_id ASC;
+
+[실행 결과]:
+member_id | member_name | membership_tier | currently_rented_book | due_date  
+----------+-------------+-----------------+-----------------------+-----------
+1         | 김민준         | VIP             | Do it! 점프 투 파이썬       | 2024-04-16
+2         | 이서연         | GOLD            | 클린 코드                 | 2024-04-17
+3         | 박도윤         | SILVER          | 방구석 미술관               | 2024-04-18
+4         | 정예은         | VIP             | 클린 코드                 | 2024-04-15
+4         | 정예은         | VIP             | 혼자 공부하는 머신러닝+딥러닝      | 2024-04-21
+5         | 최시우         | STANDARD        | (대여 중인 도서 없음)         | NULL      
+6         | 강지아         | GOLD            | 미움받을 용기               | 2024-04-19
+7         | 조현우         | STANDARD        | (대여 중인 도서 없음)         | NULL      
+8         | 윤하은         | SILVER          | 데미안                   | 2024-04-23
+9         | 장건우         | STANDARD        | (대여 중인 도서 없음)         | NULL      
+10        | 한수아         | GOLD            | 돈의 속성                 | 2024-04-20
+10        | 한수아         | GOLD            | 자본주의                  | 2024-04-22
+11        | 임지훈         | STANDARD        | (대여 중인 도서 없음)         | NULL      
+12        | 송채원         | STANDARD        | (대여 중인 도서 없음)         | NULL      
+(조회된 총 행 수: 14개)
+
+--------------------------------------------------------------------------------
+
+[Q09. [집계] 카테고리별 등록 도서 수, 평균 가격, 최고/최저 가격 통계 집계]
+- 확인 목적: 다중 집계 함수(COUNT, AVG, MAX, MIN)와 GROUP BY를 활용한 카테고리별 분포 분석
+
+[실행 SQL 문]:
+SELECT 
+    c.category_name,
+    COUNT(b.book_id) AS book_count,
+    ROUND(AVG(b.price), 0) AS avg_price,
+    MAX(b.price) AS max_price,
+    MIN(b.price) AS min_price
+FROM category c
+INNER JOIN book b ON c.category_id = b.category_id
+GROUP BY c.category_id, c.category_name
+ORDER BY book_count DESC, avg_price DESC;
+
+[실행 결과]:
+category_name | book_count | avg_price | max_price | min_price
+--------------+------------+-----------+-----------+----------
+IT/과학         | 3          | 25933.0   | 33000     | 18800    
+인문/철학         | 3          | 18300.0   | 22000     | 14900    
+소설/문학         | 3          | 12000.0   | 13000     | 11000    
+경제/경영         | 2          | 17400.0   | 17800     | 17000    
+역사/문화         | 1          | 28000.0   | 28000     | 28000    
+자연/환경         | 1          | 21000.0   | 21000     | 21000    
+예술/디자인        | 1          | 16800.0   | 16800     | 16800    
+자기계발          | 1          | 16000.0   | 16000     | 16000    
+(조회된 총 행 수: 8개)
+
+--------------------------------------------------------------------------------
+
+[Q10. [집계] 회원 등급별 회원 수 및 총 대여 건수 집계 (대여 3건 이상 등급만 HAVING 필터링)]
+- 확인 목적: 집계 후 조건 필터링을 위한 HAVING 절의 동작 원리 확인
+
+[실행 SQL 문]:
+SELECT 
+    m.membership_tier,
+    COUNT(DISTINCT m.member_id) AS member_count,
+    COUNT(r.rental_id) AS total_rentals
+FROM member m
+LEFT JOIN rental r ON m.member_id = r.member_id
+GROUP BY m.membership_tier
+HAVING total_rentals >= 3
+ORDER BY total_rentals DESC;
+
+[실행 결과]:
+membership_tier | member_count | total_rentals
+----------------+--------------+--------------
+GOLD            | 3            | 7            
+VIP             | 2            | 6            
+SILVER          | 2            | 4            
+STANDARD        | 5            | 3            
+(조회된 총 행 수: 4개)
+
+--------------------------------------------------------------------------------
+
+[Q11. [집계] 월별 도서 대여 건수 추이 및 상태별(반납/대여중/연체) 건수 분석]
+- 확인 목적: 날짜 함수(strftime)와 조건부 집계(CASE WHEN)를 결합한 월별 비즈니스 트렌드 분석
+
+[실행 SQL 문]:
+SELECT 
+    strftime('%Y-%m', rental_date) AS rental_month,
+    COUNT(*) AS total_rentals,
+    SUM(CASE WHEN status = 'RETURNED' THEN 1 ELSE 0 END) AS returned_count,
+    SUM(CASE WHEN status = 'RENTED' THEN 1 ELSE 0 END) AS active_rental_count,
+    SUM(CASE WHEN status = 'OVERDUE' THEN 1 ELSE 0 END) AS overdue_count
+FROM rental
+GROUP BY strftime('%Y-%m', rental_date)
+ORDER BY rental_month ASC;
+
+[실행 결과]:
+rental_month | total_rentals | returned_count | active_rental_count | overdue_count
+-------------+---------------+----------------+---------------------+--------------
+2024-03      | 11            | 9              | 0                   | 2            
+2024-04      | 9             | 0              | 9                   | 0            
+(조회된 총 행 수: 2개)
+
+--------------------------------------------------------------------------------
+
+[Q12. [서브쿼리] 가입 이후 한 번도 도서를 대여하지 않은 비활성 회원 조회]
+- 확인 목적: NOT IN / NOT EXISTS 서브쿼리를 통한 비활성/휴면 회원 마케팅 타겟 추출
+
+[실행 SQL 문]:
+SELECT 
+    member_id,
+    name,
+    email,
+    membership_tier,
+    join_date
+FROM member
+WHERE member_id NOT IN (
+    SELECT DISTINCT member_id 
+    FROM rental
+)
+ORDER BY member_id ASC;
+
+[실행 결과]:
+member_id | name | email                    | membership_tier | join_date 
+----------+------+--------------------------+-----------------+-----------
+11        | 임지훈  | jihoon.lim@example.com   | STANDARD        | 2024-04-10
+12        | 송채원  | chaewon.song@example.com | STANDARD        | 2024-04-20
+(조회된 총 행 수: 2개)
+
+--------------------------------------------------------------------------------
+
+[Q13. [서브쿼리] 전체 도서의 평균 정가보다 비싼 고가 도서 목록 조회]
+- 확인 목적: WHERE 절 내 집계 연산 서브쿼리를 통한 동적 기준치 초과 데이터 필터링
+
+[실행 SQL 문]:
+SELECT 
+    book_id,
+    title,
+    author,
+    price,
+    (SELECT ROUND(AVG(price), 0) FROM book) AS overall_avg_price
+FROM book
+WHERE price > (SELECT AVG(price) FROM book)
+ORDER BY price DESC;
+
+[실행 결과]:
+book_id | title            | author    | price | overall_avg_price
+--------+------------------+-----------+-------+------------------
+6       | 클린 코드            | 로버트 C. 마틴 | 33000 | 19020.0          
+10      | 총 균 쇠            | 재레드 다이아몬드 | 28000 | 19020.0          
+7       | 혼자 공부하는 머신러닝+딥러닝 | 박해선       | 26000 | 19020.0          
+3       | 사피엔스             | 유발 하라리    | 22000 | 19020.0          
+13      | 코스모스             | 칼 세이건     | 21000 | 19020.0          
+(조회된 총 행 수: 5개)
+
+--------------------------------------------------------------------------------
+
+[Q14. [UPDATE] 반납예정일이 2024-04-10 이전인 미반납 건을 'OVERDUE'(연체)로 일괄 갱신]
+- 확인 목적: 대여 기한 초과 건에 대한 배치성 상태 갱신 작업 확인
+
+[실행 SQL 문]:
+UPDATE rental
+SET status = 'OVERDUE'
+WHERE status = 'RENTED' 
+  AND due_date < '2024-04-10'
+  AND return_date IS NULL;
+
+[실행 결과]:
+>> 작업 수행 완료! 검증 쿼리 실행 결과:
+rental_id | member_id | book_id | due_date   | status 
+----------+-----------+---------+------------+--------
+12        | 8         | 10      | 2024-04-08 | OVERDUE
+16        | 9         | 13      | 2024-04-03 | OVERDUE
+(영향을 받은/조회된 행 수: 2개)
+
+--------------------------------------------------------------------------------
+
+[Q15. [DELETE] 대여 및 리뷰 이력이 전혀 없는 미활동 회원(member_id=11) 안전 삭제]
+- 확인 목적: 외래키 참조 무결성을 위반하지 않는 안전한 조건부 레코드 삭제 확인
+
+[실행 SQL 문]:
+DELETE FROM member
+WHERE member_id = 11
+  AND member_id NOT IN (SELECT DISTINCT member_id FROM rental)
+  AND member_id NOT IN (SELECT DISTINCT member_id FROM review);
+
+[실행 결과]:
+>> 작업 수행 완료! 검증 쿼리 실행 결과:
+member_id | name | email
+----------+------+------
+
+(영향을 받은/조회된 행 수: 0개)
+
+--------------------------------------------------------------------------------
+
+[Q16. [INDEX] 대여 상태 및 반납예정일 복합 인덱스 생성 및 실행 계획(EXPLAIN QUERY PLAN) 확인]
+- 확인 목적: 대용량 테이블에서 빈번한 조건 조회의 성능 극대화를 위한 복합 인덱스 적용 및 최적화 확인
+
+[실행 SQL 문]:
+CREATE INDEX IF NOT EXISTS idx_rental_status_due_date 
+ON rental(status, due_date);
+
+CREATE INDEX IF NOT EXISTS idx_book_category_id 
+ON book(category_id);
+
+[실행 결과]:
+>> 작업 수행 완료! 검증 쿼리 실행 결과:
+id | parent | notused | detail                                                                        
+---+--------+---------+-------------------------------------------------------------------------------
+3  | 0      | 51      | SEARCH rental USING INDEX idx_rental_status_due_date (status=? AND due_date<?)
+(영향을 받은/조회된 행 수: 1개)
+
+--------------------------------------------------------------------------------
+
+[보너스 1] 동일한 요구사항을 JOIN과 서브쿼리 2가지 방식으로 풀고 실행 계획 비교
+- 요구사항: '한 번이라도 리뷰를 작성한 적이 있는 회원 목록 조회'
+
+1) 방식 A [INNER JOIN + DISTINCT]:
+SELECT DISTINCT m.member_id, m.name, m.membership_tier
+FROM member m
+INNER JOIN review r ON m.member_id = r.member_id
+ORDER BY m.member_id ASC;
+member_id | name | membership_tier
+----------+------+----------------
+1         | 김민준  | VIP            
+2         | 이서연  | GOLD           
+3         | 박도윤  | SILVER         
+4         | 정예은  | VIP            
+5         | 최시우  | STANDARD       
+6         | 강지아  | GOLD           
+7         | 조현우  | STANDARD       
+10        | 한수아  | GOLD           
+
+2) 방식 B [WHERE EXISTS 서브쿼리]:
+SELECT m.member_id, m.name, m.membership_tier
+FROM member m
+WHERE EXISTS (
+    SELECT 1 FROM review r WHERE r.member_id = m.member_id
+)
+ORDER BY m.member_id ASC;
+member_id | name | membership_tier
+----------+------+----------------
+1         | 김민준  | VIP            
+2         | 이서연  | GOLD           
+3         | 박도윤  | SILVER         
+4         | 정예은  | VIP            
+5         | 최시우  | STANDARD       
+6         | 강지아  | GOLD           
+7         | 조현우  | STANDARD       
+10        | 한수아  | GOLD           
+
+3) 실행 계획(EXPLAIN QUERY PLAN) 비교 및 분석:
+>> 방식 A 실행 계획:
+id | parent | notused | detail                                      
+---+--------+---------+---------------------------------------------
+5  | 0      | 216     | SCAN r                                      
+7  | 0      | 45      | SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
+20 | 0      | 0       | USE TEMP B-TREE FOR DISTINCT                
+21 | 0      | 0       | USE TEMP B-TREE FOR ORDER BY                
+>> 방식 B 실행 계획:
+id | parent | notused | detail                                                              
+---+--------+---------+---------------------------------------------------------------------
+5  | 0      | 216     | SCAN m                                                              
+9  | 0      | 0       | BLOOM FILTER ON r (member_id=?)                                     
+19 | 0      | 53      | SEARCH r EXISTS USING AUTOMATIC PARTIAL COVERING INDEX (member_id=?)
+
+[비교 해설]:
+- 방식 A (JOIN + DISTINCT): review 테이블 전체와 조인 후 발생하는 중복 회원을 제거하기 위해
+  추가적인 정렬 및 중복 제거(DISTINCT/B-TREE 정렬) 오버헤드가 발생합니다.
+- 방식 B (WHERE EXISTS): 한 회원이 리뷰를 여러 개 작성했더라도, 첫 번째 일치하는 리뷰를
+  찾는 즉시 서브쿼리가 참(True)으로 단락 평가(Short-circuit evaluation)되므로
+  불필요한 임시 집합 생성과 중복 제거 비용이 없어 대용량 데이터에서 성능상 훨씬 유리합니다.
+
+
+--------------------------------------------------------------------------------
+
+[보너스 2] 외래키(FK) 참조 무결성 제약조건 위반 실험
+- 실험 내용: 부모 테이블(member)에 존재하지 않는 회원(member_id = 9999)으로 대여(rental) 삽입 시도
+
+[시도한 SQL]:
+INSERT INTO rental (member_id, book_id, rental_date, due_date, status)
+VALUES (9999, 1, '2024-04-20', '2024-05-04', 'RENTED');
+
+[발생한 실제 DB 엔진 에러]:
+>> sqlite3.IntegrityError: FOREIGN KEY constraint failed
+
+[원인 분석]:
+- rental 테이블의 member_id 컬럼에는 FOREIGN KEY (member_id) REFERENCES member(member_id)
+  제약조건이 걸려 있습니다.
+- DB 엔진은 데이터를 삽입하기 전, 부모 테이블인 member에 member_id = 9999 레코드가
+  실제로 존재하는지 검사합니다.
+- 존재하지 않는 유령 회원의 ID를 참조하려고 하였으므로 참조 무결성(Referential Integrity)을
+  지키기 위해 DB 엔진 차원에서 삽입을 거부하고 에러를 발생시킵니다.
+
+[해결 방법]:
+1. 부모 테이블(member)에 member_id = 9999 회원을 먼저 INSERT하여 생성하거나,
+2. 실제로 등록되어 있는 올바른 회원의 ID(예: 1~12)를 지정하여 INSERT해야 합니다.
+
+
+--------------------------------------------------------------------------------
+
+[보너스 3] 도서관 핵심 비즈니스 지표 3종 미니 리포트
+
+[지표 1] 가장 인기 있는 도서 TOP 5 (대여 횟수 및 평균 평점):
+title            | author    | category_name | total_rentals | avg_rating
+-----------------+-----------+---------------+---------------+-----------
+클린 코드            | 로버트 C. 마틴 | IT/과학         | 6             | 5.0       
+Do it! 점프 투 파이썬  | 박응용       | IT/과학         | 4             | 5.0       
+돈의 속성            | 김승호       | 경제/경영         | 4             | 4.5       
+혼자 공부하는 머신러닝+딥러닝 | 박해선       | IT/과학         | 2             | 5.0       
+데미안              | 헤르만 헤세    | 소설/문학         | 2             | 4.0       
+
+[지표 2] 회원별 독서량 및 우수 고객 랭킹 TOP 5:
+member_id | name | membership_tier | rental_count | review_count
+----------+------+-----------------+--------------+-------------
+1         | 김민준  | VIP             | 9            | 9           
+2         | 이서연  | GOLD            | 9            | 9           
+4         | 정예은  | VIP             | 3            | 3           
+3         | 박도윤  | SILVER          | 2            | 2           
+6         | 강지아  | GOLD            | 2            | 2           
+
+[지표 3] 전체 대여 현황 및 연체율(Overdue Rate) 지표:
+total_rentals | returned_count | active_count | overdue_count | overdue_rate_percentage
+--------------+----------------+--------------+---------------+------------------------
+20            | 9              | 9            | 2             | 10.0%                  

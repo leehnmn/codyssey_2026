@@ -1,0 +1,22 @@
+[Q10. [집계] 회원 등급별 회원 수 및 총 대여 건수 집계 (대여 3건 이상 등급만 HAVING 필터링)]
+- 확인 목적: 집계 후 조건 필터링을 위한 HAVING 절의 동작 원리 확인
+
+[실행 SQL 문]:
+SELECT 
+    m.membership_tier,
+    COUNT(DISTINCT m.member_id) AS member_count,
+    COUNT(r.rental_id) AS total_rentals
+FROM member m
+LEFT JOIN rental r ON m.member_id = r.member_id
+GROUP BY m.membership_tier
+HAVING total_rentals >= 3
+ORDER BY total_rentals DESC;
+
+[실행 결과]:
+membership_tier | member_count | total_rentals
+----------------+--------------+--------------
+GOLD            | 3            | 7            
+VIP             | 2            | 6            
+SILVER          | 2            | 4            
+STANDARD        | 5            | 3            
+(조회된 총 행 수: 4개)

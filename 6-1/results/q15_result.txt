@@ -1,0 +1,15 @@
+[Q15. [DELETE] 대여 및 리뷰 이력이 전혀 없는 미활동 회원(member_id=11) 안전 삭제]
+- 확인 목적: 외래키 참조 무결성을 위반하지 않는 안전한 조건부 레코드 삭제 확인
+
+[실행 SQL 문]:
+DELETE FROM member
+WHERE member_id = 11
+  AND member_id NOT IN (SELECT DISTINCT member_id FROM rental)
+  AND member_id NOT IN (SELECT DISTINCT member_id FROM review);
+
+[실행 결과]:
+>> 작업 수행 완료! 검증 쿼리 실행 결과:
+member_id | name | email
+----------+------+------
+
+(영향을 받은/조회된 행 수: 0개)

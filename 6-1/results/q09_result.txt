@@ -1,0 +1,27 @@
+[Q09. [집계] 카테고리별 등록 도서 수, 평균 가격, 최고/최저 가격 통계 집계]
+- 확인 목적: 다중 집계 함수(COUNT, AVG, MAX, MIN)와 GROUP BY를 활용한 카테고리별 분포 분석
+
+[실행 SQL 문]:
+SELECT 
+    c.category_name,
+    COUNT(b.book_id) AS book_count,
+    ROUND(AVG(b.price), 0) AS avg_price,
+    MAX(b.price) AS max_price,
+    MIN(b.price) AS min_price
+FROM category c
+INNER JOIN book b ON c.category_id = b.category_id
+GROUP BY c.category_id, c.category_name
+ORDER BY book_count DESC, avg_price DESC;
+
+[실행 결과]:
+category_name | book_count | avg_price | max_price | min_price
+--------------+------------+-----------+-----------+----------
+IT/과학         | 3          | 25933.0   | 33000     | 18800    
+인문/철학         | 3          | 18300.0   | 22000     | 14900    
+소설/문학         | 3          | 12000.0   | 13000     | 11000    
+경제/경영         | 2          | 17400.0   | 17800     | 17000    
+역사/문화         | 1          | 28000.0   | 28000     | 28000    
+자연/환경         | 1          | 21000.0   | 21000     | 21000    
+예술/디자인        | 1          | 16800.0   | 16800     | 16800    
+자기계발          | 1          | 16000.0   | 16000     | 16000    
+(조회된 총 행 수: 8개)
